@@ -7,6 +7,7 @@ import { createShadow } from '../utils/shadowStyles';
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { logout, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const handleLogout = async () => {
     console.log('=== LOGOUT BUTTON CLICKED ===');
@@ -111,7 +112,8 @@ export default function HomeScreen() {
     }
   };
 
-  const menuItems = [
+  // Menu items based on user role
+  const adminMenuItems = [
     {
       id: 'books',
       title: 'จัดการหนังสือ',
@@ -138,6 +140,19 @@ export default function HomeScreen() {
     },
   ];
 
+  const userMenuItems = [
+    {
+      id: 'borrow',
+      title: 'ยืมหนังสือ',
+      icon: '📚',
+      color: '#6366F1',
+      gradient: ['#6366F1', '#8B5CF6'],
+      onPress: () => navigation.navigate('UserBorrow'),
+    },
+  ];
+
+  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header with Gradient */}
@@ -145,7 +160,14 @@ export default function HomeScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.welcomeText}>ยินดีต้อนรับ</Text>
           <Text style={styles.userName}>{user?.username || 'ผู้ใช้'}</Text>
-          <Text style={styles.subtitle}>Library Management System</Text>
+          <Text style={styles.subtitle}>
+            {isAdmin ? 'ระบบจัดการห้องสมุด (Admin)' : 'ระบบยืม-คืนหนังสือ'}
+          </Text>
+          {isAdmin && (
+            <View style={styles.adminBadge}>
+              <Text style={styles.adminBadgeText}>👑 Admin</Text>
+            </View>
+          )}
         </View>
         <View style={styles.headerDecoration} />
       </View>
@@ -166,7 +188,7 @@ export default function HomeScreen() {
 
       {/* Menu Items */}
       <View style={styles.menuContainer}>
-        <Text style={styles.sectionTitle}>เมนูหลัก</Text>
+        <Text style={styles.sectionTitle}>{isAdmin ? 'เมนูจัดการระบบ' : 'เมนูหลัก'}</Text>
         {menuItems.map((item) => (
           <TouchableOpacity
             key={item.id}
@@ -179,7 +201,9 @@ export default function HomeScreen() {
             </View>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuText}>{item.title}</Text>
-              <Text style={styles.menuSubtext}>จัดการข้อมูล{item.title}</Text>
+              <Text style={styles.menuSubtext}>
+                {isAdmin ? `จัดการข้อมูล${item.title}` : 'เลือกหนังสือที่ต้องการยืม'}
+              </Text>
             </View>
             <Text style={styles.menuArrow}>›</Text>
           </TouchableOpacity>
