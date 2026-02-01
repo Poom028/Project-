@@ -20,27 +20,30 @@
 
 ```
 .
-├── app/                     # Backend (FastAPI)
-│   ├── main.py              # FastAPI application entry point
-│   ├── database.py          # Database connection และ initialization
-│   ├── models.py            # MongoDB models (Book, User, Transaction)
-│   ├── schemas.py           # Pydantic schemas สำหรับ request/response
-│   └── routers/
-│       ├── books.py         # API endpoints สำหรับจัดการหนังสือ
-│       ├── users.py         # API endpoints สำหรับจัดการผู้ใช้
-│       └── transactions.py  # API endpoints สำหรับการยืม-คืนหนังสือ
+├── backend/                 # Backend (FastAPI)
+│   ├── app/
+│   │   ├── main.py          # FastAPI application entry point
+│   │   ├── database.py      # Database connection และ initialization
+│   │   ├── models.py        # MongoDB models (Book, User, Transaction)
+│   │   ├── schemas.py       # Pydantic schemas สำหรับ request/response
+│   │   └── routers/
+│   │       ├── books.py     # API endpoints สำหรับจัดการหนังสือ
+│   │       ├── users.py     # API endpoints สำหรับจัดการผู้ใช้
+│   │       └── transactions.py # API endpoints สำหรับการยืม-คืนหนังสือ
+│   ├── tests/               # Backend tests
+│   │   ├── conftest.py      # Pytest configuration และ fixtures
+│   │   └── test_api.py      # Unit tests (10 test cases)
+│   ├── Dockerfile           # Docker image definition
+│   ├── requirements.txt     # Python dependencies
+│   ├── pytest.ini           # Pytest configuration
+│   └── run_tests_docker.*   # Test scripts
 ├── frontend/                # Frontend (Expo)
 │   ├── src/
 │   │   ├── config/          # API configuration
 │   │   ├── services/        # API service functions
 │   │   └── screens/         # App screens
 │   └── App.js               # Main app component
-├── tests/                   # Backend tests
-│   ├── conftest.py          # Pytest configuration และ fixtures
-│   └── test_api.py          # Unit tests (10 test cases)
-├── docker-compose.yml       # Docker Compose configuration
-├── Dockerfile               # Docker image definition
-└── requirements.txt         # Python dependencies
+└── docker-compose.yml       # Docker Compose configuration
 
 ```
 
@@ -80,9 +83,11 @@
 **Windows:**
 ```powershell
 # PowerShell
+cd backend
 .\run_tests_docker.ps1
 
 # หรือ Command Prompt
+cd backend
 run_tests_docker.bat
 ```
 
@@ -99,10 +104,22 @@ docker-compose exec backend pytest tests/ -v --cov=app --cov-report=term-missing
 docker-compose exec backend pytest tests/test_api.py::test_create_user -v
 ```
 
+**หรือใช้ Script อัตโนมัติ:**
+```bash
+# Windows PowerShell
+cd backend
+.\run_tests_docker.ps1
+
+# Windows Command Prompt
+cd backend
+run_tests_docker.bat
+```
+
 #### วิธีที่ 3: รัน tests โดยตรง (ต้องมี MongoDB รันอยู่)
 
 1. **ติดตั้ง dependencies:**
    ```bash
+   cd backend
    pip install -r requirements.txt
    ```
 
@@ -113,6 +130,7 @@ docker-compose exec backend pytest tests/test_api.py::test_create_user -v
 
 3. **รัน tests:**
    ```bash
+   cd backend
    pytest tests/ -v
    ```
 

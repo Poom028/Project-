@@ -19,7 +19,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo เลือกการรัน tests:
-echo   1. รัน tests ทั้งหมด (12 test cases)
+echo   1. รัน tests ทั้งหมด (10 test cases)
 echo   2. รัน tests พร้อม coverage report
 echo   3. รัน test case เฉพาะ
 echo   4. รัน tests แบบ verbose (แสดงผลละเอียด)
@@ -43,13 +43,11 @@ if "%choice%"=="1" (
     echo   3. test_get_books
     echo   4. test_borrow_book_success
     echo   5. test_borrow_book_out_of_stock
-    echo   6. test_borrow_book_user_not_found
-    echo   7. test_return_book_success
-    echo   8. test_return_book_no_transaction
-    echo   9. test_return_book_already_returned
-    echo   10. test_get_user_history
-    echo   11. test_delete_book
-    echo   12. test_isbn_uniqueness
+    echo   6. test_return_book_success
+    echo   7. test_return_book_no_transaction
+    echo   8. test_get_user_history
+    echo   9. test_delete_book
+    echo   10. test_isbn_uniqueness
     echo.
     set /p testName="พิมพ์ชื่อ test case (เช่น test_create_user): "
     echo.

@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "เลือกการรัน tests:" -ForegroundColor Yellow
-Write-Host "  1. รัน tests ทั้งหมด (12 test cases)" -ForegroundColor White
+Write-Host "  1. รัน tests ทั้งหมด (10 test cases)" -ForegroundColor White
 Write-Host "  2. รัน tests พร้อม coverage report" -ForegroundColor White
 Write-Host "  3. รัน test case เฉพาะ" -ForegroundColor White
 Write-Host "  4. รัน tests แบบ verbose (แสดงผลละเอียด)" -ForegroundColor White
@@ -46,13 +46,11 @@ switch ($choice) {
         Write-Host "  3. test_get_books" -ForegroundColor White
         Write-Host "  4. test_borrow_book_success" -ForegroundColor White
         Write-Host "  5. test_borrow_book_out_of_stock" -ForegroundColor White
-        Write-Host "  6. test_borrow_book_user_not_found" -ForegroundColor White
-        Write-Host "  7. test_return_book_success" -ForegroundColor White
-        Write-Host "  8. test_return_book_no_transaction" -ForegroundColor White
-        Write-Host "  9. test_return_book_already_returned" -ForegroundColor White
-        Write-Host "  10. test_get_user_history" -ForegroundColor White
-        Write-Host "  11. test_delete_book" -ForegroundColor White
-        Write-Host "  12. test_isbn_uniqueness" -ForegroundColor White
+        Write-Host "  6. test_return_book_success" -ForegroundColor White
+        Write-Host "  7. test_return_book_no_transaction" -ForegroundColor White
+        Write-Host "  8. test_get_user_history" -ForegroundColor White
+        Write-Host "  9. test_delete_book" -ForegroundColor White
+        Write-Host "  10. test_isbn_uniqueness" -ForegroundColor White
         Write-Host ""
         $testName = Read-Host "พิมพ์ชื่อ test case (เช่น test_create_user)"
         Write-Host ""
