@@ -77,6 +77,34 @@ export const usersAPI = {
   },
 };
 
+// Admin API
+export const adminAPI = {
+  getAllUsers: async () => {
+    const response = await api.get(API_ENDPOINTS.ADMIN_USERS);
+    return response.data;
+  },
+  
+  getUserById: async (id) => {
+    const response = await api.get(API_ENDPOINTS.ADMIN_USER_BY_ID(id));
+    return response.data;
+  },
+  
+  updateUserRole: async (userId, newRole) => {
+    const response = await api.put(API_ENDPOINTS.ADMIN_UPDATE_USER_ROLE(userId, newRole));
+    return response.data;
+  },
+  
+  deleteUser: async (userId) => {
+    const response = await api.delete(API_ENDPOINTS.ADMIN_DELETE_USER(userId));
+    return response.data;
+  },
+  
+  getStats: async () => {
+    const response = await api.get(API_ENDPOINTS.ADMIN_STATS);
+    return response.data;
+  },
+};
+
 // Transactions API
 export const transactionsAPI = {
   borrow: async (userId, bookId) => {

@@ -31,6 +31,13 @@ export const API_ENDPOINTS = {
   USERS: `${API_BASE_URL}/users`,
   USER_BY_ID: (id) => `${API_BASE_URL}/users/${id}`,
   
+  // Admin
+  ADMIN_USERS: `${API_BASE_URL}/admin/users`,
+  ADMIN_USER_BY_ID: (id) => `${API_BASE_URL}/admin/users/${id}`,
+  ADMIN_UPDATE_USER_ROLE: (id, role) => `${API_BASE_URL}/admin/users/${id}/role?new_role=${role}`,
+  ADMIN_DELETE_USER: (id) => `${API_BASE_URL}/admin/users/${id}`,
+  ADMIN_STATS: `${API_BASE_URL}/admin/stats`,
+  
   // Transactions
   BORROW: `${API_BASE_URL}/transactions/borrow`,
   RETURN: `${API_BASE_URL}/transactions/return`,
