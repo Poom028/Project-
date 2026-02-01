@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { booksAPI } from '../services/api';
+import { createShadow } from '../utils/shadowStyles';
 
 export default function BooksScreen() {
   const [books, setBooks] = useState([]);
@@ -292,11 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.2, radius: 4 }),
   },
   addButtonIcon: {
     fontSize: 20,
@@ -319,11 +316,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 8 }),
     borderLeftWidth: 4,
     borderLeftColor: '#6366F1',
   },
@@ -416,11 +409,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '90%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    ...createShadow({ color: '#000', offsetY: 4, opacity: 0.3, radius: 12 }),
   },
   modalHeader: {
     flexDirection: 'row',

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { createShadow } from '../utils/shadowStyles';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -208,11 +209,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    ...createShadow({ color: '#000', offsetY: 4, opacity: 0.1, radius: 8 }),
   },
   statIcon: {
     fontSize: 32,
@@ -246,11 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 8 }),
   },
   menuIconContainer: {
     width: 56,
@@ -292,11 +285,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...createShadow({ color: '#EF4444', offsetY: 4, opacity: 0.3, radius: 8 }),
   },
   logoutIcon: {
     fontSize: 20,

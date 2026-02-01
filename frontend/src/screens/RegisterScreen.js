@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { authAPI } from '../services/api';
+import { createShadow } from '../utils/shadowStyles';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -227,11 +228,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...createShadow({ color: '#000', offsetY: 1, opacity: 0.05, radius: 2 }),
   },
   button: {
     backgroundColor: '#6366F1',
@@ -241,11 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     marginTop: 10,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...createShadow({ color: '#6366F1', offsetY: 4, opacity: 0.3, radius: 8 }),
   },
   buttonDisabled: {
     opacity: 0.6,

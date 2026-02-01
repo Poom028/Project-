@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { transactionsAPI, booksAPI, usersAPI } from '../services/api';
+import { createShadow } from '../utils/shadowStyles';
 
 export default function TransactionsScreen() {
   const [books, setBooks] = useState([]);

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { usersAPI } from '../services/api';
+import { createShadow } from '../utils/shadowStyles';
 
 export default function UsersScreen() {
   const [formData, setFormData] = useState({
@@ -156,11 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 12 }),
   },
   formHeader: {
     flexDirection: 'row',
@@ -202,11 +199,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...createShadow({ color: '#10B981', offsetY: 4, opacity: 0.3, radius: 8 }),
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -226,11 +219,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 12 }),
     borderLeftWidth: 4,
     borderLeftColor: '#10B981',
   },
