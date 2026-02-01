@@ -344,6 +344,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  adminBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  adminBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   menuArrow: {
     fontSize: 24,
     color: '#9CA3AF',
