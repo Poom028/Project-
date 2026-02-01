@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { booksAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -86,80 +87,129 @@ export default function BooksScreen() {
   };
 
   const handleDeleteBook = async (id) => {
-    Alert.alert(
-      'ยืนยันการลบ',
-      'คุณต้องการลบหนังสือนี้หรือไม่?',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'ลบ',
-          style: 'destructive',
-          onPress: async () => {
-            // Check if user is authenticated
-            if (!isAuthenticated || !user) {
-              Alert.alert('Error', 'กรุณาเข้าสู่ระบบใหม่', [
-                { text: 'ตกลง', onPress: () => navigation.navigate('Login') }
-              ]);
-              return;
-            }
+    console.log('handleDeleteBook called with ID:', id);
+    
+    // Check if user is authenticated
+    if (!isAuthenticated || !user) {
+      console.log('User not authenticated, redirecting to login');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        if (window.confirm('กรุณาเข้าสู่ระบบใหม่')) {
+          navigation.navigate('Login');
+        }
+      } else {
+        Alert.alert('Error', 'กรุณาเข้าสู่ระบบใหม่', [
+          { text: 'ตกลง', onPress: () => navigation.navigate('Login') }
+        ]);
+      }
+      return;
+    }
 
-            // Check if user is admin
-            if (user.role !== 'admin') {
-              Alert.alert('Error', 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)');
-              return;
-            }
+    // Check if user is admin
+    if (user.role !== 'admin') {
+      console.log('User is not admin, role:', user.role);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)');
+      } else {
+        Alert.alert('Error', 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)');
+      }
+      return;
+    }
 
-            try {
-              console.log('=== DELETE BOOK START ===');
-              console.log('Book ID:', id);
-              console.log('Current user:', user);
-              console.log('Is authenticated:', isAuthenticated);
-              
-              const result = await booksAPI.delete(id);
-              console.log('Delete result:', result);
-              console.log('=== DELETE BOOK SUCCESS ===');
-              
-              Alert.alert('Success', 'ลบหนังสือสำเร็จ');
-              loadBooks();
-            } catch (error) {
-              console.error('=== DELETE BOOK ERROR ===');
-              console.error('Error:', error);
-              console.error('Error response:', error.response);
-              console.error('Error status:', error.response?.status);
-              console.error('Error data:', error.response?.data);
-              
-              let errorMessage = 'ไม่สามารถลบหนังสือได้';
-              let shouldRedirectToLogin = false;
-              
-              if (error.response) {
-                if (error.response.status === 401) {
-                  errorMessage = 'Token หมดอายุ กรุณาเข้าสู่ระบบใหม่';
-                  shouldRedirectToLogin = true;
-                } else if (error.response.status === 403) {
-                  errorMessage = 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)';
-                } else if (error.response.status === 404) {
-                  errorMessage = 'ไม่พบหนังสือที่ต้องการลบ';
-                } else {
-                  errorMessage = error.response.data?.detail || errorMessage;
-                }
-              } else if (error.request) {
-                errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
-              } else {
-                errorMessage = error.message || errorMessage;
-              }
-              
-              if (shouldRedirectToLogin) {
-                Alert.alert('Error', errorMessage, [
-                  { text: 'ตกลง', onPress: () => navigation.navigate('Login') }
-                ]);
-              } else {
-                Alert.alert('Error', errorMessage);
-              }
-            }
-          },
-        },
-      ]
-    );
+    // Confirm deletion
+    let confirmed = false;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      confirmed = window.confirm('คุณต้องการลบหนังสือนี้หรือไม่?');
+    } else {
+      // For mobile, we'll use a promise-based approach
+      await new Promise((resolve) => {
+        Alert.alert(
+          'ยืนยันการลบ',
+          'คุณต้องการลบหนังสือนี้หรือไม่?',
+          [
+            { 
+              text: 'ยกเลิก', 
+              style: 'cancel',
+              onPress: () => resolve(false)
+            },
+            {
+              text: 'ลบ',
+              style: 'destructive',
+              onPress: () => resolve(true)
+            },
+          ]
+        );
+      }).then((result) => {
+        confirmed = result;
+      });
+    }
+
+    if (!confirmed) {
+      console.log('Delete cancelled by user');
+      return;
+    }
+
+    // Proceed with deletion
+    try {
+      console.log('=== DELETE BOOK START ===');
+      console.log('Book ID:', id);
+      console.log('Current user:', user);
+      console.log('Is authenticated:', isAuthenticated);
+      
+      const result = await booksAPI.delete(id);
+      console.log('Delete result:', result);
+      console.log('=== DELETE BOOK SUCCESS ===');
+      
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('ลบหนังสือสำเร็จ');
+      } else {
+        Alert.alert('Success', 'ลบหนังสือสำเร็จ');
+      }
+      loadBooks();
+    } catch (error) {
+      console.error('=== DELETE BOOK ERROR ===');
+      console.error('Error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = 'ไม่สามารถลบหนังสือได้';
+      let shouldRedirectToLogin = false;
+      
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Token หมดอายุ กรุณาเข้าสู่ระบบใหม่';
+          shouldRedirectToLogin = true;
+        } else if (error.response.status === 403) {
+          errorMessage = 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)';
+        } else if (error.response.status === 404) {
+          errorMessage = 'ไม่พบหนังสือที่ต้องการลบ';
+        } else {
+          errorMessage = error.response.data?.detail || errorMessage;
+        }
+      } else if (error.request) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        if (shouldRedirectToLogin) {
+          if (window.confirm(errorMessage + '\n\nกด OK เพื่อไปหน้า Login')) {
+            navigation.navigate('Login');
+          }
+        } else {
+          window.alert(errorMessage);
+        }
+      } else {
+        if (shouldRedirectToLogin) {
+          Alert.alert('Error', errorMessage, [
+            { text: 'ตกลง', onPress: () => navigation.navigate('Login') }
+          ]);
+        } else {
+          Alert.alert('Error', errorMessage);
+        }
+      }
+    }
   };
 
   const renderBookItem = ({ item }) => {
