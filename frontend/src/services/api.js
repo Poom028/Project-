@@ -24,13 +24,15 @@ api.interceptors.request.use(
   }
 );
 
-// Handle 401 errors
+// Handle 401 errors - redirect to login
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
+      console.log('API: 401 Unauthorized - Removing tokens');
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
+      // Note: Navigation will be handled by AuthContext's useEffect
     }
     return Promise.reject(error);
   }

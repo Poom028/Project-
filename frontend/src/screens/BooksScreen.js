@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { booksAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function BooksScreen() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigation = useNavigation();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,17 +85,30 @@ export default function BooksScreen() {
           text: 'ลบ',
           style: 'destructive',
           onPress: async () => {
+            // Check if user is authenticated
+            if (!isAuthenticated || !user) {
+              Alert.alert('Error', 'กรุณาเข้าสู่ระบบใหม่', [
+                { text: 'ตกลง', onPress: () => navigation.navigate('Login') }
+              ]);
+              return;
+            }
+
             // Check if user is admin
-            if (user?.role !== 'admin') {
+            if (user.role !== 'admin') {
               Alert.alert('Error', 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)');
               return;
             }
 
             try {
-              console.log('Deleting book with ID:', id);
+              console.log('=== DELETE BOOK START ===');
+              console.log('Book ID:', id);
               console.log('Current user:', user);
+              console.log('Is authenticated:', isAuthenticated);
+              
               const result = await booksAPI.delete(id);
               console.log('Delete result:', result);
+              console.log('=== DELETE BOOK SUCCESS ===');
+              
               Alert.alert('Success', 'ลบหนังสือสำเร็จ');
               loadBooks();
             } catch (error) {
@@ -104,10 +119,12 @@ export default function BooksScreen() {
               console.error('Error data:', error.response?.data);
               
               let errorMessage = 'ไม่สามารถลบหนังสือได้';
+              let shouldRedirectToLogin = false;
               
               if (error.response) {
                 if (error.response.status === 401) {
-                  errorMessage = 'กรุณาเข้าสู่ระบบใหม่ (Token หมดอายุ)';
+                  errorMessage = 'Token หมดอายุ กรุณาเข้าสู่ระบบใหม่';
+                  shouldRedirectToLogin = true;
                 } else if (error.response.status === 403) {
                   errorMessage = 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)';
                 } else if (error.response.status === 404) {
@@ -121,7 +138,13 @@ export default function BooksScreen() {
                 errorMessage = error.message || errorMessage;
               }
               
-              Alert.alert('Error', errorMessage);
+              if (shouldRedirectToLogin) {
+                Alert.alert('Error', errorMessage, [
+                  { text: 'ตกลง', onPress: () => navigation.navigate('Login') }
+                ]);
+              } else {
+                Alert.alert('Error', errorMessage);
+              }
             }
           },
         },
