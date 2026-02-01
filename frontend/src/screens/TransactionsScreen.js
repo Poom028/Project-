@@ -378,7 +378,9 @@ export default function TransactionsScreen() {
         
         <View style={styles.transactionContent}>
           <View style={styles.transactionRow}>
-            <Text style={styles.transactionIcon}>👤</Text>
+            <View style={styles.transactionIconContainer}>
+              <Text style={styles.transactionIcon}>👤</Text>
+            </View>
             <View style={styles.transactionInfoContainer}>
               <Text style={styles.transactionLabel}>ผู้ใช้</Text>
               <Text style={styles.transactionValue}>{userName}</Text>
@@ -386,7 +388,9 @@ export default function TransactionsScreen() {
           </View>
           
           <View style={styles.transactionRow}>
-            <Text style={styles.transactionIcon}>📚</Text>
+            <View style={styles.transactionIconContainer}>
+              <Text style={styles.transactionIcon}>📚</Text>
+            </View>
             <View style={styles.transactionInfoContainer}>
               <Text style={styles.transactionLabel}>หนังสือ</Text>
               <Text style={styles.transactionValue}>{bookTitle}</Text>
@@ -394,7 +398,9 @@ export default function TransactionsScreen() {
           </View>
           
           <View style={styles.transactionRow}>
-            <Text style={styles.transactionIcon}>📅</Text>
+            <View style={styles.transactionIconContainer}>
+              <Text style={styles.transactionIcon}>📅</Text>
+            </View>
             <View style={styles.transactionInfoContainer}>
               <Text style={styles.transactionLabel}>วันที่ยืม</Text>
               <Text style={styles.transactionValue}>{new Date(item.borrow_date).toLocaleString('th-TH')}</Text>
@@ -403,7 +409,9 @@ export default function TransactionsScreen() {
           
           {item.return_date && (
             <View style={styles.transactionRow}>
-              <Text style={styles.transactionIcon}>✅</Text>
+              <View style={styles.transactionIconContainer}>
+                <Text style={styles.transactionIcon}>✅</Text>
+              </View>
               <View style={styles.transactionInfoContainer}>
                 <Text style={styles.transactionLabel}>วันที่คืน</Text>
                 <Text style={styles.transactionValue}>{new Date(item.return_date).toLocaleString('th-TH')}</Text>
@@ -817,15 +825,21 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
     color: '#fff',
-    marginBottom: 5,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 5,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.95)',
+    marginTop: 6,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   adminBadge: {
     backgroundColor: '#EF4444',
@@ -871,27 +885,33 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#1F2937',
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: 14,
     color: '#6B7280',
+    fontWeight: '600',
   },
   pendingBadge: {
     backgroundColor: '#F59E0B',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    minWidth: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    ...createShadow({ color: '#F59E0B', offsetY: 2, opacity: 0.3, radius: 4 }),
+    borderWidth: 2,
+    borderColor: '#FCD34D',
   },
   pendingBadgeText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   listContainer: {
     paddingBottom: 20,
@@ -998,15 +1018,16 @@ const styles = StyleSheet.create({
   },
   transactionCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 15,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 20,
     marginHorizontal: 20,
-    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 12 }),
+    ...createShadow({ color: '#000', offsetY: 4, opacity: 0.1, radius: 16 }),
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    overflow: 'hidden',
     ...(Platform.OS === 'web' && {
-      transition: 'all 0.3s ease',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       cursor: 'default',
     }),
   },
@@ -1020,16 +1041,19 @@ const styles = StyleSheet.create({
     }),
   },
   transactionCardPending: {
-    borderLeftWidth: 5,
+    borderLeftWidth: 6,
     borderLeftColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
   },
   transactionCardBorrowed: {
-    borderLeftWidth: 5,
+    borderLeftWidth: 6,
     borderLeftColor: '#6366F1',
+    backgroundColor: '#EEF2FF',
   },
   transactionCardPendingReturn: {
-    borderLeftWidth: 5,
+    borderLeftWidth: 6,
     borderLeftColor: '#10B981',
+    backgroundColor: '#ECFDF5',
   },
   transactionHeader: {
     flexDirection: 'row',
@@ -1044,30 +1068,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 24,
     alignSelf: 'flex-start',
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.1, radius: 4 }),
   },
   statusBadgePending: {
     backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
   },
   statusBadgeBorrowed: {
     backgroundColor: '#DBEAFE',
+    borderWidth: 1,
+    borderColor: '#93C5FD',
   },
   statusBadgePendingReturn: {
     backgroundColor: '#D1FAE5',
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
   },
   statusBadgeReturned: {
     backgroundColor: '#D1FAE5',
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
   },
   statusBadgeDefault: {
     backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   statusBadgeText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#1F2937',
+    letterSpacing: 0.3,
   },
   transactionId: {
     fontSize: 11,
@@ -1080,39 +1116,53 @@ const styles = StyleSheet.create({
   transactionRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 15,
+    marginBottom: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  transactionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   transactionIcon: {
-    fontSize: 20,
-    marginRight: 12,
-    marginTop: 2,
+    fontSize: 22,
   },
   transactionInfoContainer: {
     flex: 1,
   },
   transactionLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-    fontWeight: '500',
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginBottom: 6,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   transactionValue: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#1F2937',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   approveButton: {
     backgroundColor: '#10B981',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 10,
-    ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    marginTop: 16,
+    ...createShadow({ color: '#10B981', offsetY: 4, opacity: 0.3, radius: 8 }),
     ...(Platform.OS === 'web' && {
-      transition: 'all 0.3s ease',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       cursor: 'pointer',
     }),
   },
@@ -1129,13 +1179,14 @@ const styles = StyleSheet.create({
     }),
   },
   approveButtonIcon: {
-    fontSize: 18,
-    marginRight: 8,
+    fontSize: 20,
+    marginRight: 10,
   },
   approveButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   returnButton: {
     backgroundColor: '#10B981',
