@@ -82,12 +82,31 @@ export default function BooksScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Deleting book with ID:', id);
               await booksAPI.delete(id);
+              console.log('Book deleted successfully');
               Alert.alert('Success', 'ลบหนังสือสำเร็จ');
               loadBooks();
             } catch (error) {
-              Alert.alert('Error', 'ไม่สามารถลบหนังสือได้');
-              console.error(error);
+              console.error('Delete book error:', error);
+              console.error('Error response:', error.response);
+              let errorMessage = 'ไม่สามารถลบหนังสือได้';
+              
+              if (error.response) {
+                if (error.response.status === 401) {
+                  errorMessage = 'กรุณาเข้าสู่ระบบใหม่';
+                } else if (error.response.status === 403) {
+                  errorMessage = 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)';
+                } else if (error.response.status === 404) {
+                  errorMessage = 'ไม่พบหนังสือที่ต้องการลบ';
+                } else {
+                  errorMessage = error.response.data?.detail || errorMessage;
+                }
+              } else if (error.request) {
+                errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+              }
+              
+              Alert.alert('Error', errorMessage);
             }
           },
         },
