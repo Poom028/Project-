@@ -17,6 +17,9 @@ import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function TransactionsScreen() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [books, setBooks] = useState([]);
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -38,11 +41,24 @@ export default function TransactionsScreen() {
 
   const loadData = async () => {
     try {
-      const [booksData] = await Promise.all([booksAPI.getAll()]);
-      setBooks(booksData);
+      if (isAdmin) {
+        // For admin, load all transactions, books, and users
+        const [transactionsData, booksData, usersData] = await Promise.all([
+          adminAPI.getAllTransactions(),
+          booksAPI.getAll(),
+          adminAPI.getAllUsers(),
+        ]);
+        setTransactions(transactionsData);
+        setBooks(booksData);
+        setUsers(usersData);
+      } else {
+        // For regular users, just load books
+        const [booksData] = await Promise.all([booksAPI.getAll()]);
+        setBooks(booksData);
+      }
     } catch (error) {
+      console.error('Load data error:', error);
       Alert.alert('Error', 'ไม่สามารถโหลดข้อมูลได้');
-      console.error(error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -104,6 +120,49 @@ export default function TransactionsScreen() {
       Alert.alert('Error', 'ไม่สามารถโหลดประวัติได้');
       console.error(error);
     }
+  };
+
+  // Helper function to get user name by ID
+  const getUserName = (userId) => {
+    const foundUser = users.find(u => u.id === userId);
+    return foundUser ? foundUser.username : userId;
+  };
+
+  // Helper function to get book title by ID
+  const getBookTitle = (bookId) => {
+    const foundBook = books.find(b => b.id === bookId);
+    return foundBook ? foundBook.title : bookId;
+  };
+
+  const renderTransactionItem = ({ item }) => {
+    const userName = getUserName(item.user_id);
+    const bookTitle = getBookTitle(item.book_id);
+    const isBorrowed = item.status === 'Borrowed';
+    
+    return (
+      <View style={[styles.transactionCard, isBorrowed && styles.transactionCardBorrowed]}>
+        <View style={styles.transactionHeader}>
+          <Text style={styles.transactionStatus}>
+            {isBorrowed ? '📖 กำลังยืม' : '✅ คืนแล้ว'}
+          </Text>
+          <Text style={styles.transactionId}>ID: {item.id.substring(0, 8)}...</Text>
+        </View>
+        <Text style={styles.transactionInfo}>
+          <Text style={styles.transactionLabel}>ผู้ใช้:</Text> {userName}
+        </Text>
+        <Text style={styles.transactionInfo}>
+          <Text style={styles.transactionLabel}>หนังสือ:</Text> {bookTitle}
+        </Text>
+        <Text style={styles.transactionInfo}>
+          <Text style={styles.transactionLabel}>วันที่ยืม:</Text> {new Date(item.borrow_date).toLocaleString('th-TH')}
+        </Text>
+        {item.return_date && (
+          <Text style={styles.transactionInfo}>
+            <Text style={styles.transactionLabel}>วันที่คืน:</Text> {new Date(item.return_date).toLocaleString('th-TH')}
+          </Text>
+        )}
+      </View>
+    );
   };
 
   const renderBookItem = ({ item }) => (
