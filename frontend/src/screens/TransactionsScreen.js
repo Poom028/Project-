@@ -310,7 +310,8 @@ export default function TransactionsScreen() {
     return foundBook ? foundBook.title : bookId;
   };
 
-  const renderTransactionItem = ({ item, index }) => {
+  // Component for transaction item with animation
+  const TransactionItem = ({ item, index }) => {
     const userName = getUserName(item.user_id);
     const bookTitle = getBookTitle(item.book_id);
     const isPending = item.status === 'Pending';
@@ -329,11 +330,11 @@ export default function TransactionsScreen() {
     const statusBadge = getStatusBadge();
     const cardAnim = useRef(new Animated.Value(0)).current;
     
-    React.useEffect(() => {
+    useEffect(() => {
       Animated.timing(cardAnim, {
         toValue: 1,
         duration: 400,
-        delay: index * 100,
+        delay: (index || 0) * 100,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
