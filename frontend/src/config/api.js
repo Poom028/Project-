@@ -1,10 +1,21 @@
+/**
+ * ## API Configuration - การตั้งค่า API Endpoints
+ * 
+ * ไฟล์นี้จัดการการตั้งค่า API endpoints ทั้งหมดสำหรับ Frontend
+ * - กำหนด Base URL สำหรับ Web และ Mobile
+ * - สร้าง API endpoints ทั้งหมดที่ใช้ในแอป
+ * - จัดการ Platform-specific configuration (Web vs Mobile)
+ */
+
 import { Platform } from 'react-native';
 
-// API Configuration
-// สำหรับเชื่อมต่อกับ Backend ที่รันใน Docker Container
-// สำหรับ Web Browser: ใช้ localhost:8000
-// สำหรับ Mobile (Expo Go): ใช้ IP address ของเครื่อง (เช่น http://192.168.1.100:8000)
-// ตรวจสอบ IP address ด้วย: ipconfig (Windows) หรือ ifconfig (Mac/Linux)
+## ============================================
+## Base URL Configuration - ตั้งค่า Base URL
+## ============================================
+
+## สำหรับ Web Browser - ใช้ localhost เพราะรันบนเครื่องเดียวกัน
+## สำหรับ Mobile (Expo Go) - ต้องใช้ IP address เพราะโทรศัพท์เป็นเครื่องแยก
+## ตรวจสอบ IP address ด้วย: ipconfig (Windows) หรือ ifconfig (Mac/Linux)
 
 // สำหรับ Web Browser
 const API_BASE_URL_WEB = 'http://localhost:8000';
@@ -55,35 +66,39 @@ if (__DEV__) {
   }
 }
 
+## ============================================
+## API Endpoints - รายการ API Endpoints ทั้งหมด
+## ============================================
+
 export const API_ENDPOINTS = {
-  // Authentication
-  REGISTER: `${API_BASE_URL}/auth/register`,
-  LOGIN: `${API_BASE_URL}/auth/login-json`,
-  ME: `${API_BASE_URL}/auth/me`,
+  ## Authentication Endpoints - จัดการการยืนยันตัวตน
+  REGISTER: `${API_BASE_URL}/auth/register`,  // สมัครสมาชิก
+  LOGIN: `${API_BASE_URL}/auth/login-json`,  // เข้าสู่ระบบ (JSON format)
+  ME: `${API_BASE_URL}/auth/me`,  // ดึงข้อมูลผู้ใช้ปัจจุบัน
   
-  // Books
-  BOOKS: `${API_BASE_URL}/books`,
-  BOOK_BY_ID: (id) => `${API_BASE_URL}/books/${id}`,
+  ## Books Endpoints - จัดการข้อมูลหนังสือ
+  BOOKS: `${API_BASE_URL}/books`,  // ดึงรายการหนังสือทั้งหมด
+  BOOK_BY_ID: (id) => `${API_BASE_URL}/books/${id}`,  // ดึงข้อมูลหนังสือตาม ID
   
-  // Users
-  USERS: `${API_BASE_URL}/users`,
-  USER_BY_ID: (id) => `${API_BASE_URL}/users/${id}`,
+  ## Users Endpoints - จัดการข้อมูลผู้ใช้
+  USERS: `${API_BASE_URL}/users`,  // สร้างผู้ใช้ใหม่
+  USER_BY_ID: (id) => `${API_BASE_URL}/users/${id}`,  // ดึงข้อมูลผู้ใช้ตาม ID
   
-  // Admin
-  ADMIN_USERS: `${API_BASE_URL}/admin/users`,
-  ADMIN_USER_BY_ID: (id) => `${API_BASE_URL}/admin/users/${id}`,
-  ADMIN_UPDATE_USER_ROLE: (id, role) => `${API_BASE_URL}/admin/users/${id}/role?new_role=${role}`,
-  ADMIN_DELETE_USER: (id) => `${API_BASE_URL}/admin/users/${id}`,
-  ADMIN_STATS: `${API_BASE_URL}/admin/stats`,
-  ADMIN_TRANSACTIONS: `${API_BASE_URL}/admin/transactions`,
-  ADMIN_TRANSACTION_BY_ID: (id) => `${API_BASE_URL}/admin/transactions/${id}`,
-  ADMIN_APPROVE_BORROW: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-borrow`,
-  ADMIN_APPROVE_RETURN: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-return`,
+  ## Admin Endpoints - จัดการฟีเจอร์สำหรับ Admin
+  ADMIN_USERS: `${API_BASE_URL}/admin/users`,  // ดึงรายการผู้ใช้ทั้งหมด (Admin only)
+  ADMIN_USER_BY_ID: (id) => `${API_BASE_URL}/admin/users/${id}`,  // ดึงข้อมูลผู้ใช้ตาม ID (Admin only)
+  ADMIN_UPDATE_USER_ROLE: (id, role) => `${API_BASE_URL}/admin/users/${id}/role?new_role=${role}`,  // แก้ไขบทบาทผู้ใช้ (Admin only)
+  ADMIN_DELETE_USER: (id) => `${API_BASE_URL}/admin/users/${id}`,  // ลบผู้ใช้ (Admin only)
+  ADMIN_STATS: `${API_BASE_URL}/admin/stats`,  // ดึงสถิติระบบ (Admin only)
+  ADMIN_TRANSACTIONS: `${API_BASE_URL}/admin/transactions`,  // ดึงรายการ transactions ทั้งหมด (Admin only)
+  ADMIN_TRANSACTION_BY_ID: (id) => `${API_BASE_URL}/admin/transactions/${id}`,  // ดึงข้อมูล transaction ตาม ID (Admin only)
+  ADMIN_APPROVE_BORROW: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-borrow`,  // อนุมัติการยืม (Admin only)
+  ADMIN_APPROVE_RETURN: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-return`,  // อนุมัติการคืน (Admin only)
   
-  // Transactions
-  BORROW: `${API_BASE_URL}/transactions/borrow`,
-  RETURN: `${API_BASE_URL}/transactions/return`,
-  USER_HISTORY: (userId) => `${API_BASE_URL}/transactions/user/${userId}`,
+  ## Transactions Endpoints - จัดการการยืม-คืนหนังสือ
+  BORROW: `${API_BASE_URL}/transactions/borrow`,  // ยืมหนังสือ (สร้าง transaction แบบ Pending)
+  RETURN: `${API_BASE_URL}/transactions/return`,  // คืนหนังสือ (เปลี่ยน status เป็น PendingReturn)
+  USER_HISTORY: (userId) => `${API_BASE_URL}/transactions/user/${userId}`,  // ดูประวัติการยืม-คืนของผู้ใช้
 };
 
 export default API_BASE_URL;

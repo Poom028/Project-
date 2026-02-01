@@ -96,8 +96,9 @@ export default function RegisterScreen() {
         }
       } else if (error.request) {
         // Request was made but no response
-        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้\n\nกรุณาตรวจสอบ:\n1. IP address ถูกต้องหรือไม่ (ดูใน frontend/src/config/api.js)\n2. Backend รันอยู่หรือไม่ (http://YOUR_IP:8000/docs)\n3. โทรศัพท์และคอมพิวเตอร์อยู่ใน WiFi เดียวกัน\n4. Firewall ไม่อุดกั้น port 8000\n\nดูคู่มือ: frontend/MOBILE_SETUP.md';
         console.error('Network error:', error.request);
+        console.error('API URL ที่ใช้:', error.config?.url);
       } else {
         // Something else happened
         errorMessage = error.message || errorMessage;
