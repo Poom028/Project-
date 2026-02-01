@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { transactionsAPI, booksAPI, usersAPI, adminAPI } from '../services/api';
@@ -36,9 +38,57 @@ export default function TransactionsScreen() {
   });
   const [historyUserId, setHistoryUserId] = useState('');
   const [userHistory, setUserHistory] = useState([]);
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const headerScale = useRef(new Animated.Value(0.95)).current;
 
   useEffect(() => {
     loadData();
+    
+    // Start animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerScale, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.back(1.5)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Pulse animation for pending badge
+    if (isAdmin) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
   }, []);
 
   // Reload data when screen comes into focus (for admin to see new requests)
@@ -260,7 +310,7 @@ export default function TransactionsScreen() {
     return foundBook ? foundBook.title : bookId;
   };
 
-  const renderTransactionItem = ({ item }) => {
+  const renderTransactionItem = ({ item, index }) => {
     const userName = getUserName(item.user_id);
     const bookTitle = getBookTitle(item.book_id);
     const isPending = item.status === 'Pending';
@@ -277,14 +327,45 @@ export default function TransactionsScreen() {
     };
 
     const statusBadge = getStatusBadge();
+    const cardAnim = useRef(new Animated.Value(0)).current;
+    
+    useEffect(() => {
+      Animated.timing(cardAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, []);
     
     return (
-      <View style={[
-        styles.transactionCard,
-        isPending && styles.transactionCardPending,
-        isBorrowed && styles.transactionCardBorrowed,
-        isPendingReturn && styles.transactionCardPendingReturn,
-      ]}>
+      <Animated.View 
+        style={[
+          styles.transactionCard,
+          isPending && styles.transactionCardPending,
+          isBorrowed && styles.transactionCardBorrowed,
+          isPendingReturn && styles.transactionCardPendingReturn,
+          {
+            opacity: cardAnim,
+            transform: [
+              {
+                translateY: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+              {
+                scale: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.95, 1],
+                }),
+              },
+            ],
+          },
+          Platform.OS === 'web' && styles.transactionCardWeb,
+        ]}
+      >
         <View style={styles.transactionHeader}>
           <View style={styles.transactionStatusContainer}>
             <View style={[styles.statusBadge, statusBadge.style]}>
@@ -391,11 +472,31 @@ export default function TransactionsScreen() {
     );
   }
 
+  const pendingCount = transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').length;
+  const pendingBadgeScale = pendingCount > 0 ? pulseAnim : new Animated.Value(1);
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <Animated.View 
+        style={[
+          styles.header,
+          {
+            transform: [{ scale: headerScale }],
+            opacity: fadeAnim,
+          }
+        ]}
+      >
         <View style={styles.headerDecoration} />
-        <View style={styles.headerContent}>
+        <View style={styles.headerDecoration2} />
+        <Animated.View 
+          style={[
+            styles.headerContent,
+            {
+              transform: [{ translateY: slideAnim }],
+              opacity: fadeAnim,
+            }
+          ]}
+        >
           <Text style={styles.headerTitle}>
             {isAdmin ? '📊 การยืม-คืนหนังสือ' : 'การยืม-คืนหนังสือ'}
           </Text>
@@ -405,12 +506,19 @@ export default function TransactionsScreen() {
             </Text>
           )}
           {isAdmin && (
-            <View style={styles.adminBadge}>
+            <Animated.View 
+              style={[
+                styles.adminBadge,
+                {
+                  transform: [{ scale: pulseAnim }],
+                }
+              ]}
+            >
               <Text style={styles.adminBadgeText}>👑 Admin</Text>
-            </View>
+            </Animated.View>
           )}
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
 
       {isAdmin ? (
         // Admin view: Show all transactions
@@ -436,16 +544,26 @@ export default function TransactionsScreen() {
           </View>
 
           {/* Pending Requests Section */}
-          {(transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').length > 0) && (
-            <>
+          {pendingCount > 0 && (
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }}
+            >
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
                   <Text style={styles.sectionTitle}>⏳ คำขอที่รออนุมัติ</Text>
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>
-                      {transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').length}
-                    </Text>
-                  </View>
+                  <Animated.View 
+                    style={[
+                      styles.pendingBadge,
+                      {
+                        transform: [{ scale: pendingBadgeScale }],
+                      }
+                    ]}
+                  >
+                    <Text style={styles.pendingBadgeText}>{pendingCount}</Text>
+                  </Animated.View>
                 </View>
               </View>
               <FlatList
@@ -454,8 +572,9 @@ export default function TransactionsScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContainer}
                 ListEmptyComponent={null}
+                scrollEnabled={false}
               />
-            </>
+            </Animated.View>
           )}
 
           {/* All Transactions Section */}
@@ -463,22 +582,36 @@ export default function TransactionsScreen() {
             <Text style={styles.sectionTitle}>รายการการยืม-คืนทั้งหมด</Text>
             <Text style={styles.sectionSubtitle}>{transactions.length} รายการ</Text>
           </View>
-          <FlatList
-            data={transactions}
-            renderItem={renderTransactionItem}
-            keyExtractor={(item) => item.id}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#F59E0B" />
-            }
-            contentContainerStyle={styles.listContainer}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📚</Text>
-                <Text style={styles.emptyText}>ยังไม่มีรายการการยืม-คืน</Text>
-                <Text style={styles.emptySubtext}>เมื่อมีการยืม-คืนหนังสือ รายการจะแสดงที่นี่</Text>
-              </View>
-            }
-          />
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+            }}
+          >
+            <FlatList
+              data={transactions}
+              renderItem={(props) => renderTransactionItem({ ...props, index: props.index })}
+              keyExtractor={(item) => item.id}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#F59E0B" />
+              }
+              contentContainerStyle={styles.listContainer}
+              ListEmptyComponent={
+                <Animated.View 
+                  style={[
+                    styles.emptyContainer,
+                    {
+                      opacity: fadeAnim,
+                      transform: [{ translateY: slideAnim }],
+                    }
+                  ]}
+                >
+                  <Text style={styles.emptyIcon}>📚</Text>
+                  <Text style={styles.emptyText}>ยังไม่มีรายการการยืม-คืน</Text>
+                  <Text style={styles.emptySubtext}>เมื่อมีการยืม-คืนหนังสือ รายการจะแสดงที่นี่</Text>
+                </Animated.View>
+              }
+            />
+          </Animated.View>
         </>
       ) : (
         // Regular user view: Show books and action buttons
@@ -867,6 +1000,19 @@ const styles = StyleSheet.create({
     ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 12 }),
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    ...(Platform.OS === 'web' && {
+      transition: 'all 0.3s ease',
+      cursor: 'default',
+    }),
+  },
+  transactionCardWeb: {
+    ...(Platform.OS === 'web' && {
+      ':hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+        borderColor: '#F59E0B',
+      },
+    }),
   },
   transactionCardPending: {
     borderLeftWidth: 5,
@@ -960,6 +1106,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 10,
     ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
+    ...(Platform.OS === 'web' && {
+      transition: 'all 0.3s ease',
+      cursor: 'pointer',
+    }),
+  },
+  approveButtonWeb: {
+    ...(Platform.OS === 'web' && {
+      ':hover': {
+        backgroundColor: '#059669',
+        transform: 'translateY(-2px)',
+        boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
+      },
+      ':active': {
+        transform: 'translateY(0px)',
+      },
+    }),
   },
   approveButtonIcon: {
     fontSize: 18,
@@ -1016,3 +1178,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+// Add CSS animations for web
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const styleId = 'transactions-screen-animations';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(5deg);
+        }
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+      
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes shimmer {
+        0% {
+          background-position: -1000px 0;
+        }
+        100% {
+          background-position: 1000px 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
