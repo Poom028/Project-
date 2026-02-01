@@ -68,10 +68,10 @@
 **Windows:**
 ```powershell
 # PowerShell
-.\run_tests.ps1
+.\run_tests_docker.ps1
 
 # หรือ Command Prompt
-run_tests.bat
+run_tests_docker.bat
 ```
 
 #### วิธีที่ 2: รัน tests ด้วย Docker
@@ -103,8 +103,6 @@ docker-compose exec backend pytest tests/test_api.py::test_create_user -v
    ```bash
    pytest tests/ -v
    ```
-
-**ดูรายละเอียดเพิ่มเติม:** [TESTING.md](TESTING.md)
 
 ## API Endpoints
 
