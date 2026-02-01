@@ -19,6 +19,14 @@ import { createShadow } from '../utils/shadowStyles';
 export default function BooksScreen() {
   const { user, isAuthenticated } = useAuth();
   const navigation = useNavigation();
+
+  // Debug: Log user info when component mounts or user changes
+  useEffect(() => {
+    console.log('BooksScreen: User info updated', {
+      isAuthenticated,
+      user: user ? { id: user.id, username: user.username, role: user.role } : null
+    });
+  }, [user, isAuthenticated]);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
