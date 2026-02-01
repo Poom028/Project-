@@ -9,6 +9,13 @@ router = APIRouter()
 
 @router.post("/borrow", response_model=TransactionResponse)
 async def borrow_book(request: BorrowRequest, current_user: User = Depends(get_current_active_user)):
+    # Ensure user can only borrow for themselves unless admin
+    if str(current_user.id) != request.user_id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to borrow for other users"
+        )
+
     # Validate User
     user = await User.get(PydanticObjectId(request.user_id))
     if not user:
@@ -45,6 +52,13 @@ async def borrow_book(request: BorrowRequest, current_user: User = Depends(get_c
 
 @router.post("/return", response_model=TransactionResponse)
 async def return_book(request: ReturnRequest, current_user: User = Depends(get_current_active_user)):
+    # Ensure user can only return for themselves unless admin
+    if str(current_user.id) != request.user_id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to return for other users"
+        )
+
     # Find active transaction
     transaction = await Transaction.find_one(
         Transaction.book_id == request.book_id,
