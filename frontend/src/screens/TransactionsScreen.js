@@ -356,11 +356,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.1, radius: 4 }),
   },
   bookTitle: {
     fontSize: 18,
