@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { transactionsAPI, booksAPI, usersAPI, adminAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
@@ -40,6 +41,16 @@ export default function TransactionsScreen() {
     loadData();
   }, []);
 
+  // Reload data when screen comes into focus (for admin to see new requests)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAdmin) {
+        console.log('TransactionsScreen: Screen focused, reloading data...');
+        loadData();
+      }
+    }, [isAdmin])
+  );
+
   const loadData = async () => {
     try {
       if (isAdmin) {
@@ -49,7 +60,33 @@ export default function TransactionsScreen() {
           booksAPI.getAll(),
           adminAPI.getAllUsers(),
         ]);
-        setTransactions(transactionsData);
+        
+        // Sort transactions: Pending requests first, then by date (newest first)
+        const sortedTransactions = transactionsData.sort((a, b) => {
+          // Priority order: Pending > PendingReturn > Borrowed > Returned
+          const statusPriority = {
+            'Pending': 1,
+            'PendingReturn': 2,
+            'Borrowed': 3,
+            'Returned': 4
+          };
+          
+          const priorityA = statusPriority[a.status] || 99;
+          const priorityB = statusPriority[b.status] || 99;
+          
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+          }
+          
+          // If same priority, sort by date (newest first)
+          return new Date(b.borrow_date) - new Date(a.borrow_date);
+        });
+        
+        console.log('Loaded transactions:', sortedTransactions.length);
+        console.log('Pending borrows:', sortedTransactions.filter(t => t.status === 'Pending').length);
+        console.log('Pending returns:', sortedTransactions.filter(t => t.status === 'PendingReturn').length);
+        
+        setTransactions(sortedTransactions);
         setBooks(booksData);
         setUsers(usersData);
       } else {
@@ -398,6 +435,30 @@ export default function TransactionsScreen() {
             </View>
           </View>
 
+          {/* Pending Requests Section */}
+          {(transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').length > 0) && (
+            <>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <Text style={styles.sectionTitle}>⏳ คำขอที่รออนุมัติ</Text>
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>
+                      {transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').length}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <FlatList
+                data={transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn')}
+                renderItem={renderTransactionItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContainer}
+                ListEmptyComponent={null}
+              />
+            </>
+          )}
+
+          {/* All Transactions Section */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>รายการการยืม-คืนทั้งหมด</Text>
             <Text style={styles.sectionSubtitle}>{transactions.length} รายการ</Text>
@@ -407,7 +468,7 @@ export default function TransactionsScreen() {
             renderItem={renderTransactionItem}
             keyExtractor={(item) => item.id}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#F59E0B" />
             }
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={
@@ -666,6 +727,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
   },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -674,6 +740,20 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  pendingBadge: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   listContainer: {
     paddingBottom: 20,
