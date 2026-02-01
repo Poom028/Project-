@@ -1,20 +1,14 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from app.models import User
-from app.schemas import UserCreate, UserResponse
+from app.schemas import UserResponse
+from app.auth import get_current_active_user
 from beanie import PydanticObjectId
 
 router = APIRouter()
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(user_in: UserCreate):
-    existing_user = await User.find_one(User.username == user_in.username)
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    user = User(**user_in.model_dump())
-    await user.insert()
-    return UserResponse(id=str(user.id), username=user.username, email=user.email)
+# Note: User registration is now handled by auth router
+# This endpoint is kept for backward compatibility but should use auth/register instead
 
 @router.get("/{id}", response_model=UserResponse)
 async def get_user(id: str):

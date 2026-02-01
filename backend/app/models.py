@@ -14,7 +14,9 @@ class Book(Document):
 
 class User(Document):
     username: Indexed(str, unique=True)
-    email: str
+    email: Indexed(str, unique=True)
+    password: str  # Hashed password
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "users"

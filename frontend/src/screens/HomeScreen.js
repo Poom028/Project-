@@ -1,9 +1,32 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'ออกจากระบบ',
+      'คุณต้องการออกจากระบบหรือไม่?',
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ออกจากระบบ',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -35,6 +58,14 @@ export default function HomeScreen() {
         >
           <Text style={styles.menuIcon}>📖</Text>
           <Text style={styles.menuText}>การยืม-คืน</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, styles.logoutButton]}
+          onPress={handleLogout}
+        >
+          <Text style={styles.menuIcon}>🚪</Text>
+          <Text style={[styles.menuText, styles.logoutText]}>ออกจากระบบ</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -85,5 +116,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+  },
+  logoutButton: {
+    backgroundColor: '#f44336',
+    marginTop: 20,
+  },
+  logoutText: {
+    color: '#fff',
   },
 });

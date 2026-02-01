@@ -26,10 +26,18 @@ class UserBase(BaseModel):
     email: str
 
 class UserCreate(UserBase):
-    pass
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
 class UserResponse(UserBase):
     id: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 # Transaction Schemas
 class BorrowRequest(BaseModel):

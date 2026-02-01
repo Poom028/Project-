@@ -18,6 +18,11 @@ const API_BASE_URL_MOBILE = 'http://localhost:8000'; // เปลี่ยนเ
 const API_BASE_URL = Platform.OS === 'web' ? API_BASE_URL_WEB : API_BASE_URL_MOBILE;
 
 export const API_ENDPOINTS = {
+  // Authentication
+  REGISTER: `${API_BASE_URL}/auth/register`,
+  LOGIN: `${API_BASE_URL}/auth/login-json`,
+  ME: `${API_BASE_URL}/auth/me`,
+  
   // Books
   BOOKS: `${API_BASE_URL}/books`,
   BOOK_BY_ID: (id) => `${API_BASE_URL}/books/${id}`,

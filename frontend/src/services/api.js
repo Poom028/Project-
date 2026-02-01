@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const api = axios.create({
   baseURL: API_ENDPOINTS.BOOKS.replace('/books', ''),
@@ -8,6 +9,32 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add token to requests
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Books API
 export const booksAPI = {
@@ -70,6 +97,27 @@ export const transactionsAPI = {
   
   getUserHistory: async (userId) => {
     const response = await api.get(API_ENDPOINTS.USER_HISTORY(userId));
+    return response.data;
+  },
+};
+
+// Auth API
+export const authAPI = {
+  register: async (userData) => {
+    const response = await api.post(API_ENDPOINTS.REGISTER, userData);
+    return response.data;
+  },
+  
+  login: async (username, password) => {
+    const response = await api.post(API_ENDPOINTS.LOGIN, {
+      username,
+      password,
+    });
+    return response.data;
+  },
+  
+  getMe: async () => {
+    const response = await api.get(API_ENDPOINTS.ME);
     return response.data;
   },
 };

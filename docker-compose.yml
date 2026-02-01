@@ -9,7 +9,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGODB_URL=mongodb://db:27017/library_db
+      - MONGODB_URL=mongodb://loeitech_admin:G7%23u4sK!8zWb@202.29.231.188:27018/?authSource=admin
+      - MONGODB_DB_NAME=Book_borrowing_and_return_system_Phayu
       - TEST_MONGODB_HOST=db
     depends_on:
       db:
