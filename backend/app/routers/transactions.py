@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
 from app.models import Transaction, Book, User
 from app.schemas import BorrowRequest, TransactionResponse, ReturnRequest
+from app.auth import get_current_active_user
 from beanie import PydanticObjectId
 
 router = APIRouter()
 
 @router.post("/borrow", response_model=TransactionResponse)
-async def borrow_book(request: BorrowRequest):
+async def borrow_book(request: BorrowRequest, current_user: User = Depends(get_current_active_user)):
     # Validate User
     user = await User.get(PydanticObjectId(request.user_id))
     if not user:
@@ -43,7 +44,7 @@ async def borrow_book(request: BorrowRequest):
     )
 
 @router.post("/return", response_model=TransactionResponse)
-async def return_book(request: ReturnRequest):
+async def return_book(request: ReturnRequest, current_user: User = Depends(get_current_active_user)):
     # Find active transaction
     transaction = await Transaction.find_one(
         Transaction.book_id == request.book_id,
@@ -75,7 +76,13 @@ async def return_book(request: ReturnRequest):
     )
 
 @router.get("/user/{user_id}", response_model=list[TransactionResponse])
-async def get_user_history(user_id: str):
+async def get_user_history(user_id: str, current_user: User = Depends(get_current_active_user)):
+    # Users can only view their own history, unless they are admin
+    if current_user.role != "admin" and str(current_user.id) != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own transaction history"
+        )
     transactions = await Transaction.find(Transaction.user_id == user_id).to_list()
     return [
         TransactionResponse(
