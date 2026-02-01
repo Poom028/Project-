@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+motor
+beanie
+pydantic
+pydantic-settings
+pytest
+pytest-asyncio
+httpx
