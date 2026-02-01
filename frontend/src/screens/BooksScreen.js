@@ -12,9 +12,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { booksAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function BooksScreen() {
+  const { user } = useAuth();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -81,20 +83,31 @@ export default function BooksScreen() {
           text: 'ลบ',
           style: 'destructive',
           onPress: async () => {
+            // Check if user is admin
+            if (user?.role !== 'admin') {
+              Alert.alert('Error', 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)');
+              return;
+            }
+
             try {
               console.log('Deleting book with ID:', id);
-              await booksAPI.delete(id);
-              console.log('Book deleted successfully');
+              console.log('Current user:', user);
+              const result = await booksAPI.delete(id);
+              console.log('Delete result:', result);
               Alert.alert('Success', 'ลบหนังสือสำเร็จ');
               loadBooks();
             } catch (error) {
-              console.error('Delete book error:', error);
+              console.error('=== DELETE BOOK ERROR ===');
+              console.error('Error:', error);
               console.error('Error response:', error.response);
+              console.error('Error status:', error.response?.status);
+              console.error('Error data:', error.response?.data);
+              
               let errorMessage = 'ไม่สามารถลบหนังสือได้';
               
               if (error.response) {
                 if (error.response.status === 401) {
-                  errorMessage = 'กรุณาเข้าสู่ระบบใหม่';
+                  errorMessage = 'กรุณาเข้าสู่ระบบใหม่ (Token หมดอายุ)';
                 } else if (error.response.status === 403) {
                   errorMessage = 'คุณไม่มีสิทธิ์ลบหนังสือ (ต้องเป็น Admin)';
                 } else if (error.response.status === 404) {
@@ -103,7 +116,9 @@ export default function BooksScreen() {
                   errorMessage = error.response.data?.detail || errorMessage;
                 }
               } else if (error.request) {
-                errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+                errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
+              } else {
+                errorMessage = error.message || errorMessage;
               }
               
               Alert.alert('Error', errorMessage);
