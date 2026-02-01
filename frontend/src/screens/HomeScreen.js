@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
+import { booksAPI, adminAPI } from '../services/api';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { logout, user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    totalTransactions: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   const handleLogout = async () => {
     console.log('=== LOGOUT BUTTON CLICKED ===');
@@ -153,6 +159,44 @@ export default function HomeScreen() {
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      if (isAdmin) {
+        // For admin, get stats from admin API
+        const adminStats = await adminAPI.getStats();
+        setStats({
+          totalBooks: adminStats.total_books || 0,
+          totalTransactions: adminStats.total_transactions || 0,
+        });
+      } else {
+        // For user, just get books count
+        const books = await booksAPI.getAll();
+        setStats({
+          totalBooks: books.length || 0,
+          totalTransactions: 0,
+        });
+      }
+    } catch (error) {
+      console.error('Load stats error:', error);
+      // Try to get books count as fallback
+      try {
+        const books = await booksAPI.getAll();
+        setStats({
+          totalBooks: books.length || 0,
+          totalTransactions: 0,
+        });
+      } catch (e) {
+        console.error('Fallback load books error:', e);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header with Gradient */}
@@ -176,14 +220,31 @@ export default function HomeScreen() {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statIcon}>📚</Text>
-          <Text style={styles.statNumber}>-</Text>
+          {loading ? (
+            <Text style={styles.statNumber}>...</Text>
+          ) : (
+            <Text style={styles.statNumber}>{stats.totalBooks}</Text>
+          )}
           <Text style={styles.statLabel}>หนังสือทั้งหมด</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>📖</Text>
-          <Text style={styles.statNumber}>-</Text>
-          <Text style={styles.statLabel}>การยืม-คืน</Text>
-        </View>
+        {isAdmin && (
+          <View style={styles.statCard}>
+            <Text style={styles.statIcon}>📖</Text>
+            {loading ? (
+              <Text style={styles.statNumber}>...</Text>
+            ) : (
+              <Text style={styles.statNumber}>{stats.totalTransactions}</Text>
+            )}
+            <Text style={styles.statLabel}>การยืม-คืน</Text>
+          </View>
+        )}
+        {!isAdmin && (
+          <View style={styles.statCard}>
+            <Text style={styles.statIcon}>📚</Text>
+            <Text style={styles.statNumber}>-</Text>
+            <Text style={styles.statLabel}>หนังสือที่ยืม</Text>
+          </View>
+        )}
       </View>
 
       {/* Menu Items */}
