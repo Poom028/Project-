@@ -37,14 +37,17 @@ async def register(user_data: UserCreate):
     user = User(
         username=user_data.username,
         email=user_data.email,
-        password=hashed_password
+        password=hashed_password,
+        role=user_data.role if hasattr(user_data, 'role') else "user"
     )
     await user.insert()
     
     return UserResponse(
         id=str(user.id), 
         username=user.username, 
-        email=user.email
+        email=user.email,
+        role=user.role,
+        created_at=user.created_at
     )
 
 @router.post("/login", response_model=Token)
@@ -67,10 +70,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Create access token
+    # Create access token with role
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, "role": user.role}, expires_delta=access_token_expires
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
@@ -95,10 +98,10 @@ async def login_json(login_data: UserLogin):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Create access token
+    # Create access token with role
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, "role": user.role}, expires_delta=access_token_expires
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
@@ -109,5 +112,7 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return UserResponse(
         id=str(current_user.id), 
         username=current_user.username, 
-        email=current_user.email
+        email=current_user.email,
+        role=current_user.role,
+        created_at=current_user.created_at
     )

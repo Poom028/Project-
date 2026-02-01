@@ -27,6 +27,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    role: str = "user"  # Default to "user", can be set to "admin"
 
 class UserLogin(BaseModel):
     username: str
@@ -34,6 +35,8 @@ class UserLogin(BaseModel):
 
 class UserResponse(UserBase):
     id: str
+    role: str
+    created_at: datetime
 
 class Token(BaseModel):
     access_token: str

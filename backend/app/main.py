@@ -23,6 +23,10 @@ app.include_router(books.router, prefix="/books", tags=["Books"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
 
+# Import admin router
+from app.routers import admin
+app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+
 @app.get("/")
 async def root():
     return {"message": "Library System API is running"}

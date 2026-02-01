@@ -15,4 +15,10 @@ async def get_user(id: str):
     user = await User.get(PydanticObjectId(id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return UserResponse(id=str(user.id), username=user.username, email=user.email)
+    return UserResponse(
+        id=str(user.id),
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        created_at=user.created_at
+    )

@@ -16,6 +16,7 @@ class User(Document):
     username: Indexed(str, unique=True)
     email: Indexed(str, unique=True)
     password: str  # Hashed password
+    role: str = "user"  # "user" or "admin"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:

@@ -59,3 +59,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     """Get current active user"""
     return current_user
+
+async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Get current admin user - requires admin role"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Admin access required."
+        )
+    return current_user
