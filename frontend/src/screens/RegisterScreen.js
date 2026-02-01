@@ -79,8 +79,21 @@ export default function RegisterScreen() {
       
       if (error.response) {
         // Server responded with error
-        errorMessage = error.response.data?.detail || error.response.data?.message || errorMessage;
-        console.error('Server error:', error.response.status, errorMessage);
+        const serverMessage = error.response.data?.detail || error.response.data?.message;
+        console.error('Server error:', error.response.status, serverMessage);
+        
+        // Translate common error messages to Thai
+        if (serverMessage) {
+          if (serverMessage.includes('Email already registered') || serverMessage.includes('already registered')) {
+            errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น';
+          } else if (serverMessage.includes('Username already registered') || serverMessage.includes('Username already')) {
+            errorMessage = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว กรุณาใช้ชื่อผู้ใช้อื่น';
+          } else if (serverMessage.includes('email') && serverMessage.includes('valid')) {
+            errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
+          } else {
+            errorMessage = serverMessage;
+          }
+        }
       } else if (error.request) {
         // Request was made but no response
         errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
@@ -91,7 +104,7 @@ export default function RegisterScreen() {
         console.error('Other error:', error);
       }
       
-      Alert.alert('Error', errorMessage);
+      Alert.alert('เกิดข้อผิดพลาด', errorMessage);
     } finally {
       setLoading(false);
       console.log('=== REGISTER END ===');
