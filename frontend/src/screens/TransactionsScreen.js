@@ -11,6 +11,7 @@ import {
   RefreshControl,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { transactionsAPI, booksAPI, usersAPI, adminAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -106,6 +107,50 @@ export default function TransactionsScreen() {
     }
   };
 
+  // Handle return book for Admin (from transaction card)
+  const handleReturnBook = async (transaction) => {
+    if (transaction.status !== 'Borrowed') {
+      Alert.alert('Error', 'รายการนี้คืนแล้ว');
+      return;
+    }
+
+    const confirmReturn = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.confirm(`คุณต้องการคืนหนังสือ "${getBookTitle(transaction.book_id)}" ให้ผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`)
+      : await new Promise(resolve => {
+          Alert.alert(
+            'ยืนยันการคืน',
+            `คุณต้องการคืนหนังสือ "${getBookTitle(transaction.book_id)}" ให้ผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`,
+            [
+              { text: 'ยกเลิก', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'คืน', style: 'destructive', onPress: () => resolve(true) },
+            ],
+            { cancelable: true }
+          );
+        });
+
+    if (!confirmReturn) {
+      return;
+    }
+
+    try {
+      await transactionsAPI.return(transaction.user_id, transaction.book_id);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('คืนหนังสือสำเร็จ');
+      } else {
+        Alert.alert('Success', 'คืนหนังสือสำเร็จ');
+      }
+      loadData();
+    } catch (error) {
+      console.error('Return book error:', error);
+      const errorMessage = error.response?.data?.detail || 'ไม่สามารถคืนหนังสือได้';
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
+
   const handleViewHistory = async () => {
     if (!historyUserId) {
       Alert.alert('Error', 'กรุณากรอก User ID');
@@ -142,24 +187,61 @@ export default function TransactionsScreen() {
     return (
       <View style={[styles.transactionCard, isBorrowed && styles.transactionCardBorrowed]}>
         <View style={styles.transactionHeader}>
-          <Text style={styles.transactionStatus}>
-            {isBorrowed ? '📖 กำลังยืม' : '✅ คืนแล้ว'}
-          </Text>
+          <View style={styles.transactionStatusContainer}>
+            <View style={[styles.statusBadge, isBorrowed ? styles.statusBadgeBorrowed : styles.statusBadgeReturned]}>
+              <Text style={styles.statusBadgeText}>
+                {isBorrowed ? '📖 กำลังยืม' : '✅ คืนแล้ว'}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.transactionId}>ID: {item.id.substring(0, 8)}...</Text>
         </View>
-        <Text style={styles.transactionInfo}>
-          <Text style={styles.transactionLabel}>ผู้ใช้:</Text> {userName}
-        </Text>
-        <Text style={styles.transactionInfo}>
-          <Text style={styles.transactionLabel}>หนังสือ:</Text> {bookTitle}
-        </Text>
-        <Text style={styles.transactionInfo}>
-          <Text style={styles.transactionLabel}>วันที่ยืม:</Text> {new Date(item.borrow_date).toLocaleString('th-TH')}
-        </Text>
-        {item.return_date && (
-          <Text style={styles.transactionInfo}>
-            <Text style={styles.transactionLabel}>วันที่คืน:</Text> {new Date(item.return_date).toLocaleString('th-TH')}
-          </Text>
+        
+        <View style={styles.transactionContent}>
+          <View style={styles.transactionRow}>
+            <Text style={styles.transactionIcon}>👤</Text>
+            <View style={styles.transactionInfoContainer}>
+              <Text style={styles.transactionLabel}>ผู้ใช้</Text>
+              <Text style={styles.transactionValue}>{userName}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.transactionRow}>
+            <Text style={styles.transactionIcon}>📚</Text>
+            <View style={styles.transactionInfoContainer}>
+              <Text style={styles.transactionLabel}>หนังสือ</Text>
+              <Text style={styles.transactionValue}>{bookTitle}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.transactionRow}>
+            <Text style={styles.transactionIcon}>📅</Text>
+            <View style={styles.transactionInfoContainer}>
+              <Text style={styles.transactionLabel}>วันที่ยืม</Text>
+              <Text style={styles.transactionValue}>{new Date(item.borrow_date).toLocaleString('th-TH')}</Text>
+            </View>
+          </View>
+          
+          {item.return_date && (
+            <View style={styles.transactionRow}>
+              <Text style={styles.transactionIcon}>✅</Text>
+              <View style={styles.transactionInfoContainer}>
+                <Text style={styles.transactionLabel}>วันที่คืน</Text>
+                <Text style={styles.transactionValue}>{new Date(item.return_date).toLocaleString('th-TH')}</Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {isBorrowed && isAdmin && (
+          <TouchableOpacity
+            style={styles.returnButton}
+            onPress={() => handleReturnBook(item)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.returnButtonIcon}>↩️</Text>
+            <Text style={styles.returnButtonText}>คืนหนังสือ</Text>
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -204,35 +286,49 @@ export default function TransactionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {isAdmin ? '📊 การยืม-คืนหนังสือ (Admin)' : 'การยืม-คืนหนังสือ'}
-        </Text>
-        {isAdmin && (
-          <Text style={styles.headerSubtitle}>
-            ดูข้อมูลการยืม-คืนทั้งหมด {transactions.length} รายการ
+        <View style={styles.headerDecoration} />
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>
+            {isAdmin ? '📊 การยืม-คืนหนังสือ' : 'การยืม-คืนหนังสือ'}
           </Text>
-        )}
+          {isAdmin && (
+            <Text style={styles.headerSubtitle}>
+              ดูข้อมูลการยืม-คืนทั้งหมด {transactions.length} รายการ
+            </Text>
+          )}
+          {isAdmin && (
+            <View style={styles.adminBadge}>
+              <Text style={styles.adminBadgeText}>👑 Admin</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {isAdmin ? (
         // Admin view: Show all transactions
         <>
           <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, styles.statCardBorrowed]}>
+              <Text style={styles.statIcon}>📖</Text>
               <Text style={styles.statNumber}>{transactions.filter(t => t.status === 'Borrowed').length}</Text>
               <Text style={styles.statLabel}>กำลังยืม</Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, styles.statCardReturned]}>
+              <Text style={styles.statIcon}>✅</Text>
               <Text style={styles.statNumber}>{transactions.filter(t => t.status === 'Returned').length}</Text>
               <Text style={styles.statLabel}>คืนแล้ว</Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, styles.statCardTotal]}>
+              <Text style={styles.statIcon}>📊</Text>
               <Text style={styles.statNumber}>{transactions.length}</Text>
               <Text style={styles.statLabel}>ทั้งหมด</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>รายการการยืม-คืนทั้งหมด</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>รายการการยืม-คืนทั้งหมด</Text>
+            <Text style={styles.sectionSubtitle}>{transactions.length} รายการ</Text>
+          </View>
           <FlatList
             data={transactions}
             renderItem={renderTransactionItem}
@@ -243,7 +339,9 @@ export default function TransactionsScreen() {
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
+                <Text style={styles.emptyIcon}>📚</Text>
                 <Text style={styles.emptyText}>ยังไม่มีรายการการยืม-คืน</Text>
+                <Text style={styles.emptySubtext}>เมื่อมีการยืม-คืนหนังสือ รายการจะแสดงที่นี่</Text>
               </View>
             }
           />
@@ -416,21 +514,59 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8FAFC',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
   },
   header: {
-    backgroundColor: '#2196F3',
-    padding: 20,
+    backgroundColor: '#F59E0B',
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerDecoration: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -50,
+    right: -50,
+  },
+  headerContent: {
+    zIndex: 1,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 5,
+  },
+  adminBadge: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  adminBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -449,15 +585,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 15,
+  },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    paddingHorizontal: 15,
-    marginBottom: 10,
-    color: '#333',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   listContainer: {
-    padding: 15,
+    paddingBottom: 20,
   },
   bookCard: {
     backgroundColor: '#fff',
@@ -561,45 +707,122 @@ const styles = StyleSheet.create({
   },
   transactionCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 15,
-    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.1, radius: 8 }),
+    marginHorizontal: 20,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 12 }),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   transactionCardBorrowed: {
-    borderLeftWidth: 4,
+    borderLeftWidth: 5,
     borderLeftColor: '#F59E0B',
   },
   transactionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  transactionStatus: {
-    fontSize: 16,
+  transactionStatusContainer: {
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  statusBadgeBorrowed: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusBadgeReturned: {
+    backgroundColor: '#D1FAE5',
+  },
+  statusBadgeText: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#1F2937',
   },
   transactionId: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#9CA3AF',
+    fontFamily: 'monospace',
   },
-  transactionInfo: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
+  transactionContent: {
+    marginBottom: 15,
+  },
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 15,
+  },
+  transactionIcon: {
+    fontSize: 20,
+    marginRight: 12,
+    marginTop: 2,
+  },
+  transactionInfoContainer: {
+    flex: 1,
   },
   transactionLabel: {
-    fontWeight: '600',
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  transactionValue: {
+    fontSize: 15,
     color: '#1F2937',
+    fontWeight: '600',
+  },
+  returnButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 10,
+    ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
+  },
+  returnButtonIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  returnButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   emptyContainer: {
-    padding: 40,
+    padding: 60,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginTop: 20,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.05, radius: 4 }),
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 15,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
+    color: '#1F2937',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
     color: '#6B7280',
+    textAlign: 'center',
   },
 });
