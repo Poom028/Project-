@@ -7,12 +7,26 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Get all network adapters with IPv4 addresses
-$adapters = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
-    $_.IPAddress -notlike "127.*" -and 
-    $_.IPAddress -notlike "169.254.*" -and
-    $_.IPAddress -notlike "172.*" -and
-    $_.IPAddress -notlike "10.*"
-} | Select-Object IPAddress, InterfaceAlias
+# เน้นหา Wi-Fi adapter ก่อน (เพราะมักจะใช้สำหรับ mobile connection)
+$wifiAdapter = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.InterfaceAlias -like "*Wi-Fi*" -or $_.InterfaceAlias -like "*WiFi*" -or $_.InterfaceAlias -like "*Wireless*"
+} | Where-Object {
+    $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*"
+} | Select-Object IPAddress, InterfaceAlias, PrefixOrigin
+
+# ถ้าไม่มี Wi-Fi ให้หา adapter อื่นๆ
+if ($wifiAdapter.Count -eq 0) {
+    $adapters = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+        $_.IPAddress -notlike "127.*" -and 
+        $_.IPAddress -notlike "169.254.*"
+    } | Where-Object {
+        $_.InterfaceAlias -notlike "*vEthernet*" -and
+        $_.InterfaceAlias -notlike "*VirtualBox*" -and
+        $_.InterfaceAlias -notlike "*WSL*"
+    } | Select-Object IPAddress, InterfaceAlias, PrefixOrigin
+} else {
+    $adapters = $wifiAdapter
+}
 
 if ($adapters.Count -eq 0) {
     Write-Host "⚠️  No suitable IP address found!" -ForegroundColor Yellow

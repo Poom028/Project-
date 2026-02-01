@@ -32,7 +32,9 @@ const API_BASE_URL_WEB = 'http://localhost:8000';
 //   3. ดูที่ IPv4 Address ในส่วน WiFi หรือ Ethernet
 //
 // ⚠️ สำคัญ: ต้องใช้ IP address ที่อยู่ในเครือข่ายเดียวกับโทรศัพท์
-const IP_ADDRESS = '192.168.1.100'; // ⚠️ เปลี่ยนเป็น IP address ของเครื่องคุณ (ดูใน find_ip.ps1)
+// ใช้ IP address ของ Wi-Fi adapter (ไม่ใช่ Docker network IP)
+// รัน .\frontend\find_ip.ps1 เพื่อหา IP address อัตโนมัติ
+const IP_ADDRESS = '172.29.60.61'; // ⚠️ เปลี่ยนเป็น IP address ของเครื่องคุณ (ดูใน find_ip.ps1)
 
 // สำหรับการทดสอบ: ถ้าใช้ Expo Tunnel หรือต้องการใช้ localhost
 // const API_BASE_URL_MOBILE = 'http://localhost:8000'; // สำหรับ Expo Tunnel
