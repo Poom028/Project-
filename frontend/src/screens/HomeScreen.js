@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,12 +18,43 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Logout - this will trigger useEffect in App.js to navigate
+              // Logout first
               await logout();
+              
+              // For web, use window.location for reliable navigation
+              if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.href = '/';
+                return;
+              }
+              
+              // For mobile, use navigation
+              // Try multiple methods to ensure it works
+              try {
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }],
+                  })
+                );
+              } catch (e1) {
+                try {
+                  navigation.replace('Login');
+                } catch (e2) {
+                  try {
+                    navigation.navigate('Login');
+                  } catch (e3) {
+                    console.error('All navigation methods failed:', e3);
+                  }
+                }
+              }
             } catch (error) {
               console.error('Logout error:', error);
-              // Force logout even if there's an error
-              await logout();
+              // Force navigation even on error
+              if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.href = '/';
+              } else {
+                navigation.replace('Login');
+              }
             }
           },
         },

@@ -42,8 +42,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
+    try {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+    } catch (error) {
+      console.error('Error removing storage:', error);
+    }
     setIsAuthenticated(false);
     setUser(null);
   };

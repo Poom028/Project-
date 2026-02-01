@@ -15,17 +15,27 @@ const Stack = createNativeStackNavigator();
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigationRef = useRef(null);
+  const prevAuthRef = useRef(isAuthenticated);
 
   useEffect(() => {
-    if (!isLoading && navigationRef.current) {
-      if (!isAuthenticated) {
-        // If logged out, navigate to Login
+    // Only navigate if auth state changed from true to false
+    if (!isLoading && navigationRef.current && prevAuthRef.current && !isAuthenticated) {
+      // User just logged out
+      try {
         navigationRef.current.reset({
           index: 0,
           routes: [{ name: 'Login' }],
         });
+      } catch (error) {
+        console.error('Navigation error:', error);
+        try {
+          navigationRef.current.replace('Login');
+        } catch (e2) {
+          console.error('Replace also failed:', e2);
+        }
       }
     }
+    prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated, isLoading]);
 
   if (isLoading) {
