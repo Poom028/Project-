@@ -535,7 +535,14 @@ export default function TransactionsScreen() {
 
       {isAdmin ? (
         // Admin view: Show all transactions
-        <>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#F59E0B" />
+          }
+        >
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, styles.statCardPending]}>
               <Text style={styles.statIcon}>⏳</Text>
@@ -579,14 +586,9 @@ export default function TransactionsScreen() {
                   </Animated.View>
                 </View>
               </View>
-              <FlatList
-                data={transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn')}
-                renderItem={renderTransactionItem}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContainer}
-                ListEmptyComponent={null}
-                scrollEnabled={false}
-              />
+              {transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').map((item, index) => (
+                <TransactionItem key={item.id} item={item} index={index} />
+              ))}
             </Animated.View>
           )}
 
@@ -600,32 +602,27 @@ export default function TransactionsScreen() {
               opacity: fadeAnim,
             }}
           >
-            <FlatList
-              data={transactions}
-              renderItem={(props) => renderTransactionItem({ ...props, index: props.index })}
-              keyExtractor={(item) => item.id}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#F59E0B" />
-              }
-              contentContainerStyle={styles.listContainer}
-              ListEmptyComponent={
-                <Animated.View 
-                  style={[
-                    styles.emptyContainer,
-                    {
-                      opacity: fadeAnim,
-                      transform: [{ translateY: slideAnim }],
-                    }
-                  ]}
-                >
-                  <Text style={styles.emptyIcon}>📚</Text>
-                  <Text style={styles.emptyText}>ยังไม่มีรายการการยืม-คืน</Text>
-                  <Text style={styles.emptySubtext}>เมื่อมีการยืม-คืนหนังสือ รายการจะแสดงที่นี่</Text>
-                </Animated.View>
-              }
-            />
+            {transactions.length > 0 ? (
+              transactions.map((item, index) => (
+                <TransactionItem key={item.id} item={item} index={index} />
+              ))
+            ) : (
+              <Animated.View 
+                style={[
+                  styles.emptyContainer,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }],
+                  }
+                ]}
+              >
+                <Text style={styles.emptyIcon}>📚</Text>
+                <Text style={styles.emptyText}>ยังไม่มีรายการการยืม-คืน</Text>
+                <Text style={styles.emptySubtext}>เมื่อมีการยืม-คืนหนังสือ รายการจะแสดงที่นี่</Text>
+              </Animated.View>
+            )}
           </Animated.View>
-        </>
+        </ScrollView>
       ) : (
         // Regular user view: Show books and action buttons
         <>
@@ -971,6 +968,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   listContainer: {
     paddingBottom: 20,
