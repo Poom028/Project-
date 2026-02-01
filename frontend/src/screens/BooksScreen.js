@@ -152,30 +152,36 @@ export default function BooksScreen() {
     );
   };
 
-  const renderBookItem = ({ item }) => (
-    <View style={styles.bookCard}>
-      <View style={styles.bookIconContainer}>
-        <Text style={styles.bookIcon}>📖</Text>
-      </View>
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>โดย {item.author}</Text>
-        <View style={styles.bookMeta}>
-          <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
-          <View style={[styles.quantityBadge, item.quantity > 0 ? styles.quantityAvailable : styles.quantityUnavailable]}>
-            <Text style={styles.quantityText}>{item.quantity} เล่ม</Text>
+  const renderBookItem = ({ item }) => {
+    console.log('Rendering book item:', item.id, item.title);
+    return (
+      <View style={styles.bookCard}>
+        <View style={styles.bookIconContainer}>
+          <Text style={styles.bookIcon}>📖</Text>
+        </View>
+        <View style={styles.bookInfo}>
+          <Text style={styles.bookTitle}>{item.title}</Text>
+          <Text style={styles.bookAuthor}>โดย {item.author}</Text>
+          <View style={styles.bookMeta}>
+            <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
+            <View style={[styles.quantityBadge, item.quantity > 0 ? styles.quantityAvailable : styles.quantityUnavailable]}>
+              <Text style={styles.quantityText}>{item.quantity} เล่ม</Text>
+            </View>
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => {
+            console.log('Delete button clicked for book:', item.id, item.title);
+            handleDeleteBook(item.id);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.deleteIcon}>🗑️</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteBook(item.id)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.deleteIcon}>🗑️</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (

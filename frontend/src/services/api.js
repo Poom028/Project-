@@ -16,6 +16,10 @@ api.interceptors.request.use(
     const token = await AsyncStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('API Request:', config.method?.toUpperCase(), config.url);
+      console.log('Token present:', token.substring(0, 20) + '...');
+    } else {
+      console.warn('API Request without token:', config.method?.toUpperCase(), config.url);
     }
     return config;
   },
@@ -61,7 +65,10 @@ export const booksAPI = {
   },
   
   delete: async (id) => {
+    console.log('booksAPI.delete called with ID:', id);
+    console.log('Delete URL:', API_ENDPOINTS.BOOK_BY_ID(id));
     const response = await api.delete(API_ENDPOINTS.BOOK_BY_ID(id));
+    console.log('Delete response:', response.status, response.data);
     return response.data;
   },
 };
