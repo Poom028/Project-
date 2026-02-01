@@ -10,8 +10,10 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { transactionsAPI, booksAPI, usersAPI } from '../services/api';
+import { transactionsAPI, booksAPI, usersAPI, adminAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function TransactionsScreen() {
@@ -134,7 +136,8 @@ export default function TransactionsScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <Text>กำลังโหลด...</Text>
+        <ActivityIndicator size="large" color="#6366F1" />
+        <Text style={styles.loadingText}>กำลังโหลด...</Text>
       </View>
     );
   }
@@ -142,45 +145,91 @@ export default function TransactionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>การยืม-คืนหนังสือ</Text>
+        <Text style={styles.headerTitle}>
+          {isAdmin ? '📊 การยืม-คืนหนังสือ (Admin)' : 'การยืม-คืนหนังสือ'}
+        </Text>
+        {isAdmin && (
+          <Text style={styles.headerSubtitle}>
+            ดูข้อมูลการยืม-คืนทั้งหมด {transactions.length} รายการ
+          </Text>
+        )}
       </View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setBorrowModalVisible(true)}
-        >
-          <Text style={styles.actionButtonText}>📖 ยืมหนังสือ</Text>
-        </TouchableOpacity>
+      {isAdmin ? (
+        // Admin view: Show all transactions
+        <>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{transactions.filter(t => t.status === 'Borrowed').length}</Text>
+              <Text style={styles.statLabel}>กำลังยืม</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{transactions.filter(t => t.status === 'Returned').length}</Text>
+              <Text style={styles.statLabel}>คืนแล้ว</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{transactions.length}</Text>
+              <Text style={styles.statLabel}>ทั้งหมด</Text>
+            </View>
+          </View>
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setReturnModalVisible(true)}
-        >
-          <Text style={styles.actionButtonText}>↩️ คืนหนังสือ</Text>
-        </TouchableOpacity>
+          <Text style={styles.sectionTitle}>รายการการยืม-คืนทั้งหมด</Text>
+          <FlatList
+            data={transactions}
+            renderItem={renderTransactionItem}
+            keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+            contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>ยังไม่มีรายการการยืม-คืน</Text>
+              </View>
+            }
+          />
+        </>
+      ) : (
+        // Regular user view: Show books and action buttons
+        <>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setBorrowModalVisible(true)}
+            >
+              <Text style={styles.actionButtonText}>📖 ยืมหนังสือ</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            setHistoryUserId('');
-            setHistoryModalVisible(true);
-          }}
-        >
-          <Text style={styles.actionButtonText}>📋 ดูประวัติ</Text>
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setReturnModalVisible(true)}
+            >
+              <Text style={styles.actionButtonText}>↩️ คืนหนังสือ</Text>
+            </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>รายการหนังสือ</Text>
-      <FlatList
-        data={books}
-        renderItem={renderBookItem}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        contentContainerStyle={styles.listContainer}
-      />
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setHistoryUserId('');
+                setHistoryModalVisible(true);
+              }}
+            >
+              <Text style={styles.actionButtonText}>📋 ดูประวัติ</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.sectionTitle}>รายการหนังสือ</Text>
+          <FlatList
+            data={books}
+            renderItem={renderBookItem}
+            keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+            contentContainerStyle={styles.listContainer}
+          />
+        </>
+      )}
 
       {/* Borrow Modal */}
       <Modal
@@ -450,5 +499,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 3,
+  },
+  transactionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 15,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.1, radius: 8 }),
+  },
+  transactionCardBorrowed: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  transactionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  transactionStatus: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  transactionId: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  transactionInfo: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  transactionLabel: {
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
   },
 });

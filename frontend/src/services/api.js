@@ -112,6 +112,14 @@ export const adminAPI = {
     const response = await api.get(API_ENDPOINTS.ADMIN_STATS);
     return response.data;
   },
+  getAllTransactions: async () => {
+    const response = await api.get(API_ENDPOINTS.ADMIN_TRANSACTIONS);
+    return response.data;
+  },
+  getTransactionById: async (transactionId) => {
+    const response = await api.get(API_ENDPOINTS.ADMIN_TRANSACTION_BY_ID(transactionId));
+    return response.data;
+  },
 };
 
 // Transactions API

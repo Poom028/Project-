@@ -37,6 +37,8 @@ export const API_ENDPOINTS = {
   ADMIN_UPDATE_USER_ROLE: (id, role) => `${API_BASE_URL}/admin/users/${id}/role?new_role=${role}`,
   ADMIN_DELETE_USER: (id) => `${API_BASE_URL}/admin/users/${id}`,
   ADMIN_STATS: `${API_BASE_URL}/admin/stats`,
+  ADMIN_TRANSACTIONS: `${API_BASE_URL}/admin/transactions`,
+  ADMIN_TRANSACTION_BY_ID: (id) => `${API_BASE_URL}/admin/transactions/${id}`,
   
   // Transactions
   BORROW: `${API_BASE_URL}/transactions/borrow`,
