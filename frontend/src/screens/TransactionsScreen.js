@@ -433,8 +433,12 @@ export default function TransactionsScreen() {
             <Text style={styles.approveButtonText}>อนุมัติการคืน</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </Animated.View>
     );
+  };
+
+  const renderTransactionItem = ({ item, index }) => {
+    return <TransactionItem item={item} index={index || 0} />;
   };
 
   const renderBookItem = ({ item }) => (
