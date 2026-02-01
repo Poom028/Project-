@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 export default function HomeScreen() {
@@ -18,19 +18,31 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Logout first
               await logout();
-              // Navigate to Login screen
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+              
+              // Use CommonActions.reset for reliable navigation
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
+              );
             } catch (error) {
               console.error('Logout error:', error);
-              // Fallback: navigate anyway
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+              // Fallback: try to navigate anyway
+              try {
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }],
+                  })
+                );
+              } catch (navError) {
+                console.error('Navigation error:', navError);
+                // Last resort: use replace
+                navigation.replace('Login');
+              }
             }
           },
         },

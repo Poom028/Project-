@@ -37,12 +37,18 @@ function AppNavigator() {
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false,
+          }}
         />
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false,
+          }}
         />
         <Stack.Screen
           name="Home"
@@ -50,6 +56,7 @@ function AppNavigator() {
           options={{ 
             title: 'ระบบยืม-คืนหนังสือ',
             headerShown: false,
+            gestureEnabled: false,
           }}
         />
         <Stack.Screen
