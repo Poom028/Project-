@@ -26,6 +26,13 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    console.log('=== REGISTER START ===');
+    console.log('Form data:', { 
+      username: formData.username, 
+      email: formData.email, 
+      passwordLength: formData.password.length 
+    });
+
     if (!formData.username || !formData.email || !formData.password) {
       Alert.alert('Error', 'กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
@@ -43,25 +50,51 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await authAPI.register({
+      console.log('Calling authAPI.register...');
+      const registerData = {
         username: formData.username,
         email: formData.email,
         password: formData.password,
-      });
+      };
+      console.log('Register data:', { ...registerData, password: '***' });
+      
+      const result = await authAPI.register(registerData);
+      console.log('Register successful:', result);
       
       Alert.alert('Success', 'สมัครสมาชิกสำเร็จ', [
         {
           text: 'OK',
-          onPress: () => navigation.navigate('Login'),
+          onPress: () => {
+            console.log('Navigating to Login...');
+            navigation.navigate('Login');
+          },
         },
       ]);
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.detail || 'ไม่สามารถสมัครสมาชิกได้'
-      );
+      console.error('=== REGISTER ERROR ===', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      
+      let errorMessage = 'ไม่สามารถสมัครสมาชิกได้';
+      
+      if (error.response) {
+        // Server responded with error
+        errorMessage = error.response.data?.detail || error.response.data?.message || errorMessage;
+        console.error('Server error:', error.response.status, errorMessage);
+      } else if (error.request) {
+        // Request was made but no response
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
+        console.error('Network error:', error.request);
+      } else {
+        // Something else happened
+        errorMessage = error.message || errorMessage;
+        console.error('Other error:', error);
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
+      console.log('=== REGISTER END ===');
     }
   };
 

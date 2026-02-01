@@ -41,7 +41,11 @@ async def register(user_data: UserCreate):
     )
     await user.insert()
     
-    return UserResponse(id=str(user.id), username=user.username, email=user.email)
+    return UserResponse(
+        id=str(user.id), 
+        username=user.username, 
+        email=user.email
+    )
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -102,4 +106,8 @@ async def login_json(login_data: UserLogin):
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     """Get current user information"""
-    return UserResponse(id=str(current_user.id), username=current_user.username, email=current_user.email)
+    return UserResponse(
+        id=str(current_user.id), 
+        username=current_user.username, 
+        email=current_user.email
+    )
