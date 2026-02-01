@@ -329,7 +329,7 @@ export default function TransactionsScreen() {
     const statusBadge = getStatusBadge();
     const cardAnim = useRef(new Animated.Value(0)).current;
     
-    useEffect(() => {
+    React.useEffect(() => {
       Animated.timing(cardAnim, {
         toValue: 1,
         duration: 400,
@@ -337,7 +337,7 @@ export default function TransactionsScreen() {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
-    }, []);
+    }, [index]);
     
     return (
       <Animated.View 
