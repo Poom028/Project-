@@ -11,24 +11,37 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     console.log('=== LOGOUT BUTTON CLICKED ===');
     
-    // Show confirmation first
-    Alert.alert(
-      'ออกจากระบบ',
-      'คุณต้องการออกจากระบบหรือไม่?',
-      [
-        { 
-          text: 'ยกเลิก', 
-          style: 'cancel',
-          onPress: () => console.log('Logout cancelled')
-        },
-        {
-          text: 'ออกจากระบบ',
-          style: 'destructive',
-          onPress: performLogout,
-        },
-      ],
-      { cancelable: true }
-    );
+    // For web, show confirmation dialog using browser's confirm
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const confirmed = window.confirm('คุณต้องการออกจากระบบหรือไม่?');
+      if (!confirmed) {
+        console.log('Logout cancelled by user');
+        return;
+      }
+    } else {
+      // For mobile, use Alert
+      Alert.alert(
+        'ออกจากระบบ',
+        'คุณต้องการออกจากระบบหรือไม่?',
+        [
+          { 
+            text: 'ยกเลิก', 
+            style: 'cancel',
+            onPress: () => console.log('Logout cancelled')
+          },
+          {
+            text: 'ออกจากระบบ',
+            style: 'destructive',
+            onPress: performLogout,
+          },
+        ],
+        { cancelable: true }
+      );
+      return;
+    }
+    
+    // If web and confirmed, proceed with logout
+    await performLogout();
   };
 
   const performLogout = async () => {
@@ -42,16 +55,14 @@ export default function HomeScreen() {
       
       // For web, reload the page to ensure clean state
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        console.log('Step 3: Web platform detected, reloading page in 100ms...');
-        setTimeout(() => {
-          console.log('Step 4: Executing window.location.reload()');
-          window.location.reload();
-        }, 100);
+        console.log('Step 3: Web platform detected, reloading page immediately...');
+        // Use href instead of reload to ensure clean navigation
+        window.location.href = '/';
         return;
       }
       
       // For mobile, use navigation reset immediately
-      console.log('Step 3: Mobile platform, navigating to Login in 200ms...');
+      console.log('Step 3: Mobile platform, navigating to Login...');
       setTimeout(() => {
         try {
           console.log('Step 4: Attempting navigation.replace("Login")...');
@@ -71,13 +82,13 @@ export default function HomeScreen() {
             console.error('Step 5: All navigation methods failed:', resetError);
           }
         }
-      }, 200);
+      }, 100);
     } catch (error) {
       console.error('=== LOGOUT ERROR ===', error);
       // Force reload/navigation even on error
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         console.log('Error: Force reloading page...');
-        window.location.reload();
+        window.location.href = '/';
       } else {
         setTimeout(() => {
           try {
@@ -95,7 +106,7 @@ export default function HomeScreen() {
               console.error('All navigation methods failed:', resetError);
             }
           }
-        }, 200);
+        }, 100);
       }
     }
   };
