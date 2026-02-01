@@ -28,36 +28,48 @@ export default function HomeScreen() {
               // For web, reload the page to ensure clean state
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
                 console.log('Logout: Web platform, reloading page...');
-                window.location.href = '/';
+                // Use reload instead of href to ensure state is cleared
+                window.location.reload();
                 return;
               }
               
               // For mobile, use navigation reset immediately
               console.log('Logout: Mobile platform, resetting navigation...');
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                })
-              );
-              console.log('Logout: Navigation reset completed');
+              // Use replace first, then reset if needed
+              try {
+                navigation.replace('Login');
+                console.log('Logout: Navigation replace completed');
+              } catch (replaceError) {
+                console.log('Logout: Replace failed, trying reset...', replaceError);
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }],
+                  })
+                );
+                console.log('Logout: Navigation reset completed');
+              }
             } catch (error) {
               console.error('Logout error:', error);
               // Force reload/navigation even on error
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.href = '/';
+                window.location.reload();
               } else {
                 try {
-                  navigation.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [{ name: 'Login' }],
-                    })
-                  );
+                  navigation.replace('Login');
                 } catch (navError) {
                   console.error('Navigation error:', navError);
-                  // Last resort: try replace
-                  navigation.replace('Login');
+                  // Last resort: try reset
+                  try {
+                    navigation.dispatch(
+                      CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      })
+                    );
+                  } catch (resetError) {
+                    console.error('All navigation methods failed:', resetError);
+                  }
                 }
               }
             }

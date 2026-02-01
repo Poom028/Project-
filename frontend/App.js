@@ -20,14 +20,28 @@ function AppNavigator() {
     // Navigate to Login when user logs out
     if (!isLoading && !isAuthenticated && navigationRef.isReady()) {
       console.log('App: User logged out, resetting navigation...');
-      try {
-        navigationRef.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
-        console.log('App: Navigation reset successful');
-      } catch (error) {
-        console.error('App: Navigation reset error:', error);
+      console.log('App: Current route:', navigationRef.getCurrentRoute()?.name);
+      
+      // Only navigate if we're not already on Login screen
+      const currentRoute = navigationRef.getCurrentRoute();
+      if (currentRoute?.name !== 'Login') {
+        try {
+          navigationRef.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+          console.log('App: Navigation reset successful');
+        } catch (error) {
+          console.error('App: Navigation reset error:', error);
+          // Fallback: try replace
+          try {
+            navigationRef.navigate('Login');
+          } catch (navError) {
+            console.error('App: Navigation navigate error:', navError);
+          }
+        }
+      } else {
+        console.log('App: Already on Login screen');
       }
     }
   }, [isAuthenticated, isLoading]);
