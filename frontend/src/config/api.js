@@ -9,13 +9,13 @@
 
 import { Platform } from 'react-native';
 
-## ============================================
-## Base URL Configuration - ตั้งค่า Base URL
-## ============================================
+// ============================================
+// Base URL Configuration - ตั้งค่า Base URL
+// ============================================
 
-## สำหรับ Web Browser - ใช้ localhost เพราะรันบนเครื่องเดียวกัน
-## สำหรับ Mobile (Expo Go) - ต้องใช้ IP address เพราะโทรศัพท์เป็นเครื่องแยก
-## ตรวจสอบ IP address ด้วย: ipconfig (Windows) หรือ ifconfig (Mac/Linux)
+// สำหรับ Web Browser - ใช้ localhost เพราะรันบนเครื่องเดียวกัน
+// สำหรับ Mobile (Expo Go) - ต้องใช้ IP address เพราะโทรศัพท์เป็นเครื่องแยก
+// ตรวจสอบ IP address ด้วย: ipconfig (Windows) หรือ ifconfig (Mac/Linux)
 
 // สำหรับ Web Browser
 const API_BASE_URL_WEB = 'http://localhost:8000';
@@ -66,25 +66,25 @@ if (__DEV__) {
   }
 }
 
-## ============================================
-## API Endpoints - รายการ API Endpoints ทั้งหมด
-## ============================================
+// ============================================
+// API Endpoints - รายการ API Endpoints ทั้งหมด
+// ============================================
 
 export const API_ENDPOINTS = {
-  ## Authentication Endpoints - จัดการการยืนยันตัวตน
+  // Authentication Endpoints - จัดการการยืนยันตัวตน
   REGISTER: `${API_BASE_URL}/auth/register`,  // สมัครสมาชิก
   LOGIN: `${API_BASE_URL}/auth/login-json`,  // เข้าสู่ระบบ (JSON format)
   ME: `${API_BASE_URL}/auth/me`,  // ดึงข้อมูลผู้ใช้ปัจจุบัน
   
-  ## Books Endpoints - จัดการข้อมูลหนังสือ
+  // Books Endpoints - จัดการข้อมูลหนังสือ
   BOOKS: `${API_BASE_URL}/books`,  // ดึงรายการหนังสือทั้งหมด
   BOOK_BY_ID: (id) => `${API_BASE_URL}/books/${id}`,  // ดึงข้อมูลหนังสือตาม ID
   
-  ## Users Endpoints - จัดการข้อมูลผู้ใช้
+  // Users Endpoints - จัดการข้อมูลผู้ใช้
   USERS: `${API_BASE_URL}/users`,  // สร้างผู้ใช้ใหม่
   USER_BY_ID: (id) => `${API_BASE_URL}/users/${id}`,  // ดึงข้อมูลผู้ใช้ตาม ID
   
-  ## Admin Endpoints - จัดการฟีเจอร์สำหรับ Admin
+  // Admin Endpoints - จัดการฟีเจอร์สำหรับ Admin
   ADMIN_USERS: `${API_BASE_URL}/admin/users`,  // ดึงรายการผู้ใช้ทั้งหมด (Admin only)
   ADMIN_USER_BY_ID: (id) => `${API_BASE_URL}/admin/users/${id}`,  // ดึงข้อมูลผู้ใช้ตาม ID (Admin only)
   ADMIN_UPDATE_USER_ROLE: (id, role) => `${API_BASE_URL}/admin/users/${id}/role?new_role=${role}`,  // แก้ไขบทบาทผู้ใช้ (Admin only)
@@ -95,7 +95,7 @@ export const API_ENDPOINTS = {
   ADMIN_APPROVE_BORROW: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-borrow`,  // อนุมัติการยืม (Admin only)
   ADMIN_APPROVE_RETURN: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-return`,  // อนุมัติการคืน (Admin only)
   
-  ## Transactions Endpoints - จัดการการยืม-คืนหนังสือ
+  // Transactions Endpoints - จัดการการยืม-คืนหนังสือ
   BORROW: `${API_BASE_URL}/transactions/borrow`,  // ยืมหนังสือ (สร้าง transaction แบบ Pending)
   RETURN: `${API_BASE_URL}/transactions/return`,  // คืนหนังสือ (เปลี่ยน status เป็น PendingReturn)
   USER_HISTORY: (userId) => `${API_BASE_URL}/transactions/user/${userId}`,  // ดูประวัติการยืม-คืนของผู้ใช้
