@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { usersAPI } from '../services/api';
 
@@ -16,6 +17,7 @@ export default function UsersScreen() {
     email: '',
   });
   const [createdUser, setCreatedUser] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleCreateUser = async () => {
     if (!formData.username || !formData.email) {
@@ -23,6 +25,7 @@ export default function UsersScreen() {
       return;
     }
 
+    setLoading(true);
     try {
       const user = await usersAPI.create({
         username: formData.username,
@@ -34,44 +37,89 @@ export default function UsersScreen() {
     } catch (error) {
       Alert.alert('Error', error.response?.data?.detail || 'ไม่สามารถสร้างผู้ใช้ได้');
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>จัดการผู้ใช้</Text>
+        <View>
+          <Text style={styles.headerTitle}>จัดการผู้ใช้</Text>
+          <Text style={styles.headerSubtitle}>สร้างและจัดการบัญชีผู้ใช้</Text>
+        </View>
       </View>
 
       <View style={styles.formContainer}>
-        <Text style={styles.sectionTitle}>สร้างผู้ใช้ใหม่</Text>
+        <View style={styles.formCard}>
+          <View style={styles.formHeader}>
+            <Text style={styles.formIcon}>👤</Text>
+            <Text style={styles.sectionTitle}>สร้างผู้ใช้ใหม่</Text>
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="ชื่อผู้ใช้"
-          value={formData.username}
-          onChangeText={(text) => setFormData({ ...formData, username: text })}
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="กรอกชื่อผู้ใช้"
+              placeholderTextColor="#9CA3AF"
+              value={formData.username}
+              onChangeText={(text) => setFormData({ ...formData, username: text })}
+              autoCapitalize="none"
+            />
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="อีเมล"
-          value={formData.email}
-          onChangeText={(text) => setFormData({ ...formData, email: text })}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>อีเมล</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="กรอกอีเมล"
+              placeholderTextColor="#9CA3AF"
+              value={formData.email}
+              onChangeText={(text) => setFormData({ ...formData, email: text })}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleCreateUser}>
-          <Text style={styles.submitButtonText}>สร้างผู้ใช้</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.buttonDisabled]}
+            onPress={handleCreateUser}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.submitButtonText}>สร้างผู้ใช้</Text>
+                <Text style={styles.buttonIcon}>→</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
 
         {createdUser && (
           <View style={styles.userCard}>
-            <Text style={styles.userCardTitle}>ผู้ใช้ที่สร้างล่าสุด</Text>
-            <Text style={styles.userInfo}>ID: {createdUser.id}</Text>
-            <Text style={styles.userInfo}>Username: {createdUser.username}</Text>
-            <Text style={styles.userInfo}>Email: {createdUser.email}</Text>
+            <View style={styles.userCardHeader}>
+              <Text style={styles.userCardIcon}>✅</Text>
+              <Text style={styles.userCardTitle}>ผู้ใช้ที่สร้างล่าสุด</Text>
+            </View>
+            <View style={styles.userInfoContainer}>
+              <View style={styles.userInfoRow}>
+                <Text style={styles.userInfoLabel}>ID:</Text>
+                <Text style={styles.userInfoValue}>{createdUser.id}</Text>
+              </View>
+              <View style={styles.userInfoRow}>
+                <Text style={styles.userInfoLabel}>Username:</Text>
+                <Text style={styles.userInfoValue}>{createdUser.username}</Text>
+              </View>
+              <View style={styles.userInfoRow}>
+                <Text style={styles.userInfoLabel}>Email:</Text>
+                <Text style={styles.userInfoValue}>{createdUser.email}</Text>
+              </View>
+            </View>
           </View>
         )}
       </View>
@@ -82,67 +130,142 @@ export default function UsersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8FAFC',
   },
   header: {
-    backgroundColor: '#2196F3',
-    padding: 20,
+    backgroundColor: '#10B981',
+    padding: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   formContainer: {
     padding: 20,
   },
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  formHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  formIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 15,
-    color: '#333',
+    color: '#374151',
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
+    color: '#1F2937',
   },
   submitButton: {
-    backgroundColor: '#2196F3',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    padding: 18,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+    marginRight: 8,
+  },
+  buttonIcon: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   userCard: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginTop: 20,
+    borderRadius: 20,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
+  },
+  userCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  userCardIcon: {
+    fontSize: 24,
+    marginRight: 12,
   },
   userCardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
+    color: '#1F2937',
   },
-  userInfo: {
+  userInfoContainer: {
+    gap: 12,
+  },
+  userInfoRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  userInfoLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    fontWeight: '600',
+    color: '#6B7280',
+    width: 80,
+  },
+  userInfoValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    flex: 1,
   },
 });

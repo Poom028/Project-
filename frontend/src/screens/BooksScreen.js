@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { booksAPI } from '../services/api';
 
@@ -95,19 +96,25 @@ export default function BooksScreen() {
 
   const renderBookItem = ({ item }) => (
     <View style={styles.bookCard}>
+      <View style={styles.bookIconContainer}>
+        <Text style={styles.bookIcon}>📖</Text>
+      </View>
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>โดย: {item.author}</Text>
-        <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
-        <Text style={styles.bookQuantity}>
-          จำนวน: {item.quantity} เล่ม
-        </Text>
+        <Text style={styles.bookAuthor}>โดย {item.author}</Text>
+        <View style={styles.bookMeta}>
+          <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
+          <View style={[styles.quantityBadge, item.quantity > 0 ? styles.quantityAvailable : styles.quantityUnavailable]}>
+            <Text style={styles.quantityText}>{item.quantity} เล่ม</Text>
+          </View>
+        </View>
       </View>
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={() => handleDeleteBook(item.id)}
+        activeOpacity={0.7}
       >
-        <Text style={styles.deleteButtonText}>ลบ</Text>
+        <Text style={styles.deleteIcon}>🗑️</Text>
       </TouchableOpacity>
     </View>
   );
@@ -115,7 +122,8 @@ export default function BooksScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <Text>กำลังโหลด...</Text>
+        <ActivityIndicator size="large" color="#6366F1" />
+        <Text style={styles.loadingText}>กำลังโหลด...</Text>
       </View>
     );
   }
@@ -123,12 +131,17 @@ export default function BooksScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>รายการหนังสือ</Text>
+        <View>
+          <Text style={styles.headerTitle}>รายการหนังสือ</Text>
+          <Text style={styles.headerSubtitle}>{books.length} เล่ม</Text>
+        </View>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setModalVisible(true)}
+          activeOpacity={0.8}
         >
-          <Text style={styles.addButtonText}>+ เพิ่มหนังสือ</Text>
+          <Text style={styles.addButtonIcon}>+</Text>
+          <Text style={styles.addButtonText}>เพิ่ม</Text>
         </TouchableOpacity>
       </View>
 
@@ -137,12 +150,15 @@ export default function BooksScreen() {
         renderItem={renderBookItem}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#6366F1" />
         }
         contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>ไม่มีข้อมูลหนังสือ</Text>
+            <Text style={styles.emptyIcon}>📚</Text>
+            <Text style={styles.emptyText}>ยังไม่มีหนังสือ</Text>
+            <Text style={styles.emptySubtext}>กดปุ่ม "เพิ่ม" เพื่อเพิ่มหนังสือเล่มแรก</Text>
           </View>
         }
       />
@@ -155,50 +171,76 @@ export default function BooksScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>เพิ่มหนังสือใหม่</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>เพิ่มหนังสือใหม่</Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
             
-            <TextInput
-              style={styles.input}
-              placeholder="ชื่อหนังสือ"
-              value={formData.title}
-              onChangeText={(text) => setFormData({ ...formData, title: text })}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ชื่อหนังสือ</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="กรอกชื่อหนังสือ"
+                placeholderTextColor="#9CA3AF"
+                value={formData.title}
+                onChangeText={(text) => setFormData({ ...formData, title: text })}
+              />
+            </View>
             
-            <TextInput
-              style={styles.input}
-              placeholder="ชื่อผู้แต่ง"
-              value={formData.author}
-              onChangeText={(text) => setFormData({ ...formData, author: text })}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ชื่อผู้แต่ง</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="กรอกชื่อผู้แต่ง"
+                placeholderTextColor="#9CA3AF"
+                value={formData.author}
+                onChangeText={(text) => setFormData({ ...formData, author: text })}
+              />
+            </View>
             
-            <TextInput
-              style={styles.input}
-              placeholder="ISBN"
-              value={formData.isbn}
-              onChangeText={(text) => setFormData({ ...formData, isbn: text })}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ISBN</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="กรอก ISBN"
+                placeholderTextColor="#9CA3AF"
+                value={formData.isbn}
+                onChangeText={(text) => setFormData({ ...formData, isbn: text })}
+              />
+            </View>
             
-            <TextInput
-              style={styles.input}
-              placeholder="จำนวน"
-              value={formData.quantity}
-              onChangeText={(text) => setFormData({ ...formData, quantity: text })}
-              keyboardType="numeric"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>จำนวน</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="กรอกจำนวนหนังสือ"
+                placeholderTextColor="#9CA3AF"
+                value={formData.quantity}
+                onChangeText={(text) => setFormData({ ...formData, quantity: text })}
+                keyboardType="numeric"
+              />
+            </View>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
+                activeOpacity={0.7}
               >
-                <Text style={styles.modalButtonText}>ยกเลิก</Text>
+                <Text style={styles.cancelButtonText}>ยกเลิก</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={[styles.modalButton, styles.submitButton]}
                 onPress={handleCreateBook}
+                activeOpacity={0.8}
               >
-                <Text style={[styles.modalButtonText, styles.submitButtonText]}>บันทึก</Text>
+                <Text style={styles.submitButtonText}>บันทึก</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -211,51 +253,91 @@ export default function BooksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8FAFC',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
   },
   header: {
-    backgroundColor: '#2196F3',
-    padding: 20,
+    backgroundColor: '#6366F1',
+    padding: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   addButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#2196F3',
-    fontWeight: '600',
-  },
-  listContainer: {
-    padding: 15,
-  },
-  bookCard: {
-    backgroundColor: '#fff',
-    padding: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 12,
-    marginBottom: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+  },
+  addButtonIcon: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#6366F1',
+    marginRight: 6,
+  },
+  addButtonText: {
+    color: '#6366F1',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  listContainer: {
+    padding: 16,
+  },
+  bookCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: '#6366F1',
+  },
+  bookIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#6366F120',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  bookIcon: {
+    fontSize: 28,
   },
   bookInfo: {
     flex: 1,
@@ -263,41 +345,64 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    color: '#1F2937',
+    marginBottom: 6,
   },
   bookAuthor: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 3,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  bookMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   bookIsbn: {
     fontSize: 12,
-    color: '#999',
-    marginBottom: 3,
+    color: '#9CA3AF',
   },
-  bookQuantity: {
-    fontSize: 14,
-    color: '#2196F3',
+  quantityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  quantityAvailable: {
+    backgroundColor: '#10B98120',
+  },
+  quantityUnavailable: {
+    backgroundColor: '#EF444420',
+  },
+  quantityText: {
+    fontSize: 12,
     fontWeight: '600',
+    color: '#1F2937',
   },
   deleteButton: {
-    backgroundColor: '#f44336',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
+    padding: 8,
+    marginLeft: 8,
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+  deleteIcon: {
+    fontSize: 20,
   },
   emptyContainer: {
-    padding: 40,
+    padding: 60,
     alignItems: 'center',
   },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   modalContainer: {
     flex: 1,
@@ -307,49 +412,82 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 24,
+    padding: 24,
     width: '90%',
     maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#6B7280',
+  },
+  inputGroup: {
     marginBottom: 20,
-    textAlign: 'center',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
   },
   input: {
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
+    color: '#1F2937',
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    gap: 12,
+    marginTop: 8,
   },
   modalButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 5,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#F3F4F6',
   },
-  submitButton: {
-    backgroundColor: '#2196F3',
-  },
-  modalButtonText: {
-    textAlign: 'center',
+  cancelButtonText: {
+    color: '#6B7280',
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+  },
+  submitButton: {
+    backgroundColor: '#6366F1',
   },
   submitButtonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
