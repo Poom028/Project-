@@ -44,11 +44,13 @@ export default function BooksScreen() {
 
   const loadBooks = async () => {
     try {
+      console.log('Loading books...');
       const data = await booksAPI.getAll();
+      console.log('Books loaded:', data.length, 'books');
       setBooks(data);
     } catch (error) {
+      console.error('Error loading books:', error);
       Alert.alert('Error', 'ไม่สามารถโหลดข้อมูลหนังสือได้');
-      console.error(error);
     } finally {
       setLoading(false);
       setRefreshing(false);
