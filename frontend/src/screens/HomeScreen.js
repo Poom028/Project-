@@ -8,8 +8,10 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { logout, user } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('=== LOGOUT BUTTON CLICKED ===');
+    
+    // Show confirmation first
     Alert.alert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบหรือไม่?',
@@ -22,78 +24,80 @@ export default function HomeScreen() {
         {
           text: 'ออกจากระบบ',
           style: 'destructive',
-          onPress: async () => {
-            console.log('=== LOGOUT CONFIRMED ===');
-            try {
-              console.log('Step 1: Calling logout()...');
-              
-              // Logout first - this will update isAuthenticated to false
-              await logout();
-              console.log('Step 2: Logout completed, isAuthenticated should be false now');
-              
-              // For web, reload the page to ensure clean state
-              if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                console.log('Step 3: Web platform detected, reloading page...');
-                // Small delay to ensure state is updated
-                setTimeout(() => {
-                  window.location.reload();
-                }, 100);
-                return;
-              }
-              
-              // For mobile, use navigation reset immediately
-              console.log('Step 3: Mobile platform, navigating to Login...');
-              // Use replace first, then reset if needed
-              setTimeout(() => {
-                try {
-                  console.log('Step 4: Attempting navigation.replace...');
-                  navigation.replace('Login');
-                  console.log('Step 5: Navigation replace successful');
-                } catch (replaceError) {
-                  console.log('Step 4: Replace failed, trying reset...', replaceError);
-                  try {
-                    navigation.dispatch(
-                      CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'Login' }],
-                      })
-                    );
-                    console.log('Step 5: Navigation reset successful');
-                  } catch (resetError) {
-                    console.error('Step 5: All navigation methods failed:', resetError);
-                  }
-                }
-              }, 200);
-            } catch (error) {
-              console.error('=== LOGOUT ERROR ===', error);
-              // Force reload/navigation even on error
-              if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.reload();
-              } else {
-                setTimeout(() => {
-                  try {
-                    navigation.replace('Login');
-                  } catch (navError) {
-                    console.error('Navigation error:', navError);
-                    try {
-                      navigation.dispatch(
-                        CommonActions.reset({
-                          index: 0,
-                          routes: [{ name: 'Login' }],
-                        })
-                      );
-                    } catch (resetError) {
-                      console.error('All navigation methods failed:', resetError);
-                    }
-                  }
-                }, 200);
-              }
-            }
-          },
+          onPress: performLogout,
         },
       ],
       { cancelable: true }
     );
+  };
+
+  const performLogout = async () => {
+    console.log('=== LOGOUT CONFIRMED - STARTING LOGOUT ===');
+    try {
+      console.log('Step 1: Calling logout() function...');
+      
+      // Logout first - this will update isAuthenticated to false
+      await logout();
+      console.log('Step 2: Logout function completed');
+      
+      // For web, reload the page to ensure clean state
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        console.log('Step 3: Web platform detected, reloading page in 100ms...');
+        setTimeout(() => {
+          console.log('Step 4: Executing window.location.reload()');
+          window.location.reload();
+        }, 100);
+        return;
+      }
+      
+      // For mobile, use navigation reset immediately
+      console.log('Step 3: Mobile platform, navigating to Login in 200ms...');
+      setTimeout(() => {
+        try {
+          console.log('Step 4: Attempting navigation.replace("Login")...');
+          navigation.replace('Login');
+          console.log('Step 5: Navigation replace successful');
+        } catch (replaceError) {
+          console.log('Step 4: Replace failed, trying reset...', replaceError);
+          try {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              })
+            );
+            console.log('Step 5: Navigation reset successful');
+          } catch (resetError) {
+            console.error('Step 5: All navigation methods failed:', resetError);
+          }
+        }
+      }, 200);
+    } catch (error) {
+      console.error('=== LOGOUT ERROR ===', error);
+      // Force reload/navigation even on error
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        console.log('Error: Force reloading page...');
+        window.location.reload();
+      } else {
+        setTimeout(() => {
+          try {
+            navigation.replace('Login');
+          } catch (navError) {
+            console.error('Navigation error:', navError);
+            try {
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
+              );
+            } catch (resetError) {
+              console.error('All navigation methods failed:', resetError);
+            }
+          }
+        }, 200);
+      }
+    }
   };
 
   const menuItems = [
@@ -175,13 +179,11 @@ export default function HomeScreen() {
       <View style={styles.logoutContainer}>
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={() => {
-            console.log('Logout button pressed!');
-            handleLogout();
-          }}
+          onPress={handleLogout}
           activeOpacity={0.8}
           accessible={true}
           accessibilityLabel="ออกจากระบบ"
+          testID="logout-button"
         >
           <Text style={styles.logoutIcon}>🚪</Text>
           <Text style={styles.logoutText}>ออกจากระบบ</Text>
