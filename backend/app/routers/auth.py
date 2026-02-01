@@ -15,7 +15,7 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate):
-    """Register a new user"""
+    """Register a new user or admin"""
     # Check if username already exists
     existing_user = await User.find_one(User.username == user_data.username)
     if existing_user:
@@ -32,13 +32,21 @@ async def register(user_data: UserCreate):
             detail="Email already registered"
         )
     
+    # Determine role: if username is "admin" and password is "admin123", set role to admin
+    # Otherwise use the role from request or default to "user"
+    user_role = "user"
+    if user_data.username.lower() == "admin" and user_data.password == "admin123":
+        user_role = "admin"
+    elif hasattr(user_data, 'role') and user_data.role:
+        user_role = user_data.role
+    
     # Create new user with hashed password
     hashed_password = get_password_hash(user_data.password)
     user = User(
         username=user_data.username,
         email=user_data.email,
         password=hashed_password,
-        role=user_data.role if hasattr(user_data, 'role') else "user"
+        role=user_role
     )
     await user.insert()
     
