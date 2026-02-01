@@ -805,12 +805,15 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#F59E0B',
     paddingTop: 60,
-    paddingBottom: 30,
+    paddingBottom: 40,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     position: 'relative',
     overflow: 'hidden',
+    ...(Platform.OS === 'web' && {
+      background: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #DC2626 100%)',
+    }),
   },
   headerDecoration: {
     position: 'absolute',
@@ -853,6 +856,62 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginTop: -30,
+    marginBottom: 20,
+    gap: 15,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    ...createShadow({ color: '#000', offsetY: 4, opacity: 0.1, radius: 12 }),
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    ...(Platform.OS === 'web' && {
+      transition: 'all 0.3s ease',
+      cursor: 'default',
+      ':hover': {
+        transform: 'translateY(-6px) scale(1.02)',
+        boxShadow: '0 16px 32px rgba(0, 0, 0, 0.15)',
+        borderColor: '#E5E7EB',
+      },
+    }),
+  },
+  statCardPending: {
+    borderTopWidth: 4,
+    borderTopColor: '#F59E0B',
+  },
+  statCardBorrowed: {
+    borderTopWidth: 4,
+    borderTopColor: '#6366F1',
+  },
+  statCardReturned: {
+    borderTopWidth: 4,
+    borderTopColor: '#10B981',
+  },
+  statIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   buttonContainer: {
     flexDirection: 'row',
