@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, ActivityIndicator } from 'react-native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
 import { booksAPI, adminAPI } from '../services/api';
@@ -159,11 +159,21 @@ export default function HomeScreen() {
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
+  // Load stats when component mounts
   useEffect(() => {
     loadStats();
   }, []);
 
+  // Reload stats every time the screen comes into focus (when user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('HomeScreen: Screen focused, reloading stats...');
+      loadStats();
+    }, [isAdmin])
+  );
+
   const loadStats = async () => {
+    setLoading(true);
     try {
       if (isAdmin) {
         // For admin, get stats from admin API
@@ -172,12 +182,19 @@ export default function HomeScreen() {
           totalBooks: adminStats.total_books || 0,
           totalTransactions: adminStats.total_transactions || 0,
         });
+        console.log('Stats loaded (admin):', {
+          totalBooks: adminStats.total_books,
+          totalTransactions: adminStats.total_transactions
+        });
       } else {
         // For user, just get books count
         const books = await booksAPI.getAll();
         setStats({
           totalBooks: books.length || 0,
           totalTransactions: 0,
+        });
+        console.log('Stats loaded (user):', {
+          totalBooks: books.length
         });
       }
     } catch (error) {
@@ -221,7 +238,7 @@ export default function HomeScreen() {
         <View style={styles.statCard}>
           <Text style={styles.statIcon}>📚</Text>
           {loading ? (
-            <Text style={styles.statNumber}>...</Text>
+            <ActivityIndicator size="small" color="#1F2937" style={{ marginVertical: 8 }} />
           ) : (
             <Text style={styles.statNumber}>{stats.totalBooks}</Text>
           )}
@@ -231,7 +248,7 @@ export default function HomeScreen() {
           <View style={styles.statCard}>
             <Text style={styles.statIcon}>📖</Text>
             {loading ? (
-              <Text style={styles.statNumber}>...</Text>
+              <ActivityIndicator size="small" color="#1F2937" style={{ marginVertical: 8 }} />
             ) : (
               <Text style={styles.statNumber}>{stats.totalTransactions}</Text>
             )}
