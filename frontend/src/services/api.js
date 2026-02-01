@@ -120,6 +120,14 @@ export const adminAPI = {
     const response = await api.get(API_ENDPOINTS.ADMIN_TRANSACTION_BY_ID(transactionId));
     return response.data;
   },
+  approveBorrow: async (transactionId) => {
+    const response = await api.post(API_ENDPOINTS.ADMIN_APPROVE_BORROW(transactionId));
+    return response.data;
+  },
+  approveReturn: async (transactionId) => {
+    const response = await api.post(API_ENDPOINTS.ADMIN_APPROVE_RETURN(transactionId));
+    return response.data;
+  },
 };
 
 // Transactions API

@@ -73,12 +73,12 @@ export default function UserBorrowScreen() {
     // Confirm borrowing
     let confirmed = false;
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      confirmed = window.confirm(`คุณต้องการยืม "${book.title}" หรือไม่?`);
+      confirmed = window.confirm(`คุณต้องการยืม "${book.title}" หรือไม่?\n\nคำขอจะถูกส่งไปให้ Admin อนุมัติ`);
     } else {
-      await new Promise((resolve) => {
+      confirmed = await new Promise((resolve) => {
         Alert.alert(
           'ยืมหนังสือ',
-          `คุณต้องการยืม "${book.title}" หรือไม่?`,
+          `คุณต้องการยืม "${book.title}" หรือไม่?\n\nคำขอจะถูกส่งไปให้ Admin อนุมัติ`,
           [
             { 
               text: 'ยกเลิก', 
@@ -91,8 +91,6 @@ export default function UserBorrowScreen() {
             },
           ]
         );
-      }).then((result) => {
-        confirmed = result;
       });
     }
 
@@ -112,9 +110,9 @@ export default function UserBorrowScreen() {
       console.log('=== BORROW BOOK SUCCESS ===');
       
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert('ยืมหนังสือสำเร็จ');
+        window.alert('ส่งคำขอยืมหนังสือแล้ว\nรอ Admin อนุมัติ');
       } else {
-        Alert.alert('สำเร็จ', 'ยืมหนังสือสำเร็จ');
+        Alert.alert('สำเร็จ', 'ส่งคำขอยืมหนังสือแล้ว\nรอ Admin อนุมัติ');
       }
       loadBooks();
     } catch (error) {
@@ -134,7 +132,7 @@ export default function UserBorrowScreen() {
         } else if (error.response.status === 404) {
           errorMessage = error.response.data?.detail || 'ไม่พบหนังสือหรือผู้ใช้';
         } else if (error.response.status === 400) {
-          errorMessage = error.response.data?.detail || 'หนังสือหมดแล้ว';
+          errorMessage = error.response.data?.detail || 'หนังสือหมดแล้ว หรือคุณมีคำขอที่รออนุมัติอยู่แล้ว';
         } else {
           errorMessage = error.response.data?.detail || errorMessage;
         }
@@ -151,6 +149,53 @@ export default function UserBorrowScreen() {
       }
     } finally {
       setBorrowing(false);
+    }
+  };
+
+  const handleReturn = async (transaction) => {
+    if (transaction.status !== 'Borrowed') {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('ไม่สามารถคืนหนังสือได้ เนื่องจากยังไม่ได้รับการอนุมัติการยืม');
+      } else {
+        Alert.alert('Error', 'ไม่สามารถคืนหนังสือได้ เนื่องจากยังไม่ได้รับการอนุมัติการยืม');
+      }
+      return;
+    }
+
+    const confirmReturn = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.confirm('คุณต้องการคืนหนังสือนี้หรือไม่?\n\nคำขอจะถูกส่งไปให้ Admin อนุมัติ')
+      : await new Promise(resolve => {
+          Alert.alert(
+            'คืนหนังสือ',
+            'คุณต้องการคืนหนังสือนี้หรือไม่?\n\nคำขอจะถูกส่งไปให้ Admin อนุมัติ',
+            [
+              { text: 'ยกเลิก', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'คืน', onPress: () => resolve(true) },
+            ],
+            { cancelable: true }
+          );
+        });
+
+    if (!confirmReturn) {
+      return;
+    }
+
+    try {
+      await transactionsAPI.return(transaction.user_id, transaction.book_id);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('ส่งคำขอคืนหนังสือแล้ว\nรอ Admin อนุมัติ');
+      } else {
+        Alert.alert('สำเร็จ', 'ส่งคำขอคืนหนังสือแล้ว\nรอ Admin อนุมัติ');
+      }
+      loadHistory(); // Reload history to show updated status
+    } catch (error) {
+      console.error('Return book error:', error);
+      const errorMessage = error.response?.data?.detail || 'ไม่สามารถคืนหนังสือได้';
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -282,21 +327,44 @@ export default function UserBorrowScreen() {
               <FlatList
                 data={history}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={styles.historyItem}>
-                    <Text style={styles.historyStatus}>
-                      {item.status === 'Borrowed' ? '📖 กำลังยืม' : '✅ คืนแล้ว'}
-                    </Text>
-                    <Text style={styles.historyDate}>
-                      ยืม: {new Date(item.borrow_date).toLocaleDateString('th-TH')}
-                    </Text>
-                    {item.return_date && (
+                renderItem={({ item }) => {
+                  const getStatusText = () => {
+                    switch (item.status) {
+                      case 'Pending':
+                        return '⏳ รอการอนุมัติการยืม';
+                      case 'Borrowed':
+                        return '📖 กำลังยืม';
+                      case 'PendingReturn':
+                        return '⏳ รอการอนุมัติการคืน';
+                      case 'Returned':
+                        return '✅ คืนแล้ว';
+                      default:
+                        return item.status;
+                    }
+                  };
+
+                  return (
+                    <View style={styles.historyItem}>
+                      <Text style={styles.historyStatus}>{getStatusText()}</Text>
                       <Text style={styles.historyDate}>
-                        คืน: {new Date(item.return_date).toLocaleDateString('th-TH')}
+                        ยืม: {new Date(item.borrow_date).toLocaleDateString('th-TH')}
                       </Text>
-                    )}
-                  </View>
-                )}
+                      {item.return_date && (
+                        <Text style={styles.historyDate}>
+                          คืน: {new Date(item.return_date).toLocaleDateString('th-TH')}
+                        </Text>
+                      )}
+                      {item.status === 'Borrowed' && (
+                        <TouchableOpacity
+                          style={styles.returnButton}
+                          onPress={() => handleReturn(item)}
+                        >
+                          <Text style={styles.returnButtonText}>↩️ คืนหนังสือ</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                }}
                 ListEmptyComponent={
                   <Text style={styles.emptyHistoryText}>ไม่มีประวัติการยืม-คืน</Text>
                 }
@@ -489,5 +557,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#6B7280',
     padding: 20,
+  },
+  returnButton: {
+    backgroundColor: '#10B981',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
+  },
+  returnButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

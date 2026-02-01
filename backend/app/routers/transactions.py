@@ -29,17 +29,34 @@ async def borrow_book(request: BorrowRequest, current_user: User = Depends(get_c
     if book.quantity < 1:
         raise HTTPException(status_code=400, detail="Book out of stock")
 
-    # Create Transaction
+    # Check if user already has a pending or active borrow for this book
+    existing_pending = await Transaction.find_one(
+        Transaction.book_id == request.book_id,
+        Transaction.user_id == request.user_id,
+        Transaction.status == "Pending"
+    )
+    existing_borrowed = await Transaction.find_one(
+        Transaction.book_id == request.book_id,
+        Transaction.user_id == request.user_id,
+        Transaction.status == "Borrowed"
+    )
+    existing_transaction = existing_pending or existing_borrowed
+    
+    if existing_transaction:
+        raise HTTPException(
+            status_code=400, 
+            detail="You already have a pending or active borrow request for this book"
+        )
+
+    # Create Transaction with Pending status (waiting for admin approval)
     transaction = Transaction(
         user_id=str(user.id),
         book_id=str(book.id),
-        status="Borrowed"
+        status="Pending"
     )
     await transaction.insert()
 
-    # Decrease Book Quantity
-    book.quantity -= 1
-    await book.save()
+    # Note: Book quantity is NOT decreased here - it will be decreased when admin approves
 
     return TransactionResponse(
         id=str(transaction.id),
@@ -59,7 +76,7 @@ async def return_book(request: ReturnRequest, current_user: User = Depends(get_c
             detail="Not authorized to return for other users"
         )
 
-    # Find active transaction
+    # Find active transaction (must be Borrowed status)
     transaction = await Transaction.find_one(
         Transaction.book_id == request.book_id,
         Transaction.user_id == request.user_id,
@@ -69,16 +86,11 @@ async def return_book(request: ReturnRequest, current_user: User = Depends(get_c
     if not transaction:
         raise HTTPException(status_code=404, detail="Active borrow transaction not found")
 
-    # Update Transaction
-    transaction.return_date = datetime.utcnow()
-    transaction.status = "Returned"
+    # Update Transaction to PendingReturn (waiting for admin approval)
+    transaction.status = "PendingReturn"
     await transaction.save()
 
-    # Increase Book Quantity
-    book = await Book.get(PydanticObjectId(request.book_id))
-    if book:
-        book.quantity += 1
-        await book.save()
+    # Note: Book quantity is NOT increased here - it will be increased when admin approves
     
     return TransactionResponse(
         id=str(transaction.id),

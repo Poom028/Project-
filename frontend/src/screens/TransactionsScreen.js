@@ -107,42 +107,86 @@ export default function TransactionsScreen() {
     }
   };
 
-  // Handle return book for Admin (from transaction card)
-  const handleReturnBook = async (transaction) => {
-    if (transaction.status !== 'Borrowed') {
-      Alert.alert('Error', 'รายการนี้คืนแล้ว');
+  // Handle approve borrow for Admin
+  const handleApproveBorrow = async (transaction) => {
+    if (transaction.status !== 'Pending') {
+      Alert.alert('Error', 'รายการนี้ไม่ใช่คำขอที่รออนุมัติ');
       return;
     }
 
-    const confirmReturn = Platform.OS === 'web' && typeof window !== 'undefined'
-      ? window.confirm(`คุณต้องการคืนหนังสือ "${getBookTitle(transaction.book_id)}" ให้ผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`)
+    const confirmApprove = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.confirm(`คุณต้องการอนุมัติการยืมหนังสือ "${getBookTitle(transaction.book_id)}" ให้ผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`)
       : await new Promise(resolve => {
           Alert.alert(
-            'ยืนยันการคืน',
-            `คุณต้องการคืนหนังสือ "${getBookTitle(transaction.book_id)}" ให้ผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`,
+            'ยืนยันการอนุมัติ',
+            `คุณต้องการอนุมัติการยืมหนังสือ "${getBookTitle(transaction.book_id)}" ให้ผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`,
             [
               { text: 'ยกเลิก', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'คืน', style: 'destructive', onPress: () => resolve(true) },
+              { text: 'อนุมัติ', onPress: () => resolve(true) },
             ],
             { cancelable: true }
           );
         });
 
-    if (!confirmReturn) {
+    if (!confirmApprove) {
       return;
     }
 
     try {
-      await transactionsAPI.return(transaction.user_id, transaction.book_id);
+      await adminAPI.approveBorrow(transaction.id);
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert('คืนหนังสือสำเร็จ');
+        window.alert('อนุมัติการยืมหนังสือสำเร็จ');
       } else {
-        Alert.alert('Success', 'คืนหนังสือสำเร็จ');
+        Alert.alert('Success', 'อนุมัติการยืมหนังสือสำเร็จ');
       }
       loadData();
     } catch (error) {
-      console.error('Return book error:', error);
-      const errorMessage = error.response?.data?.detail || 'ไม่สามารถคืนหนังสือได้';
+      console.error('Approve borrow error:', error);
+      const errorMessage = error.response?.data?.detail || 'ไม่สามารถอนุมัติได้';
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
+
+  // Handle approve return for Admin
+  const handleApproveReturn = async (transaction) => {
+    if (transaction.status !== 'PendingReturn') {
+      Alert.alert('Error', 'รายการนี้ไม่ใช่คำขอคืนที่รออนุมัติ');
+      return;
+    }
+
+    const confirmApprove = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.confirm(`คุณต้องการอนุมัติการคืนหนังสือ "${getBookTitle(transaction.book_id)}" จากผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`)
+      : await new Promise(resolve => {
+          Alert.alert(
+            'ยืนยันการอนุมัติ',
+            `คุณต้องการอนุมัติการคืนหนังสือ "${getBookTitle(transaction.book_id)}" จากผู้ใช้ "${getUserName(transaction.user_id)}" หรือไม่?`,
+            [
+              { text: 'ยกเลิก', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'อนุมัติ', onPress: () => resolve(true) },
+            ],
+            { cancelable: true }
+          );
+        });
+
+    if (!confirmApprove) {
+      return;
+    }
+
+    try {
+      await adminAPI.approveReturn(transaction.id);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('อนุมัติการคืนหนังสือสำเร็จ');
+      } else {
+        Alert.alert('Success', 'อนุมัติการคืนหนังสือสำเร็จ');
+      }
+      loadData();
+    } catch (error) {
+      console.error('Approve return error:', error);
+      const errorMessage = error.response?.data?.detail || 'ไม่สามารถอนุมัติได้';
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.alert(errorMessage);
       } else {
@@ -182,16 +226,32 @@ export default function TransactionsScreen() {
   const renderTransactionItem = ({ item }) => {
     const userName = getUserName(item.user_id);
     const bookTitle = getBookTitle(item.book_id);
+    const isPending = item.status === 'Pending';
     const isBorrowed = item.status === 'Borrowed';
+    const isPendingReturn = item.status === 'PendingReturn';
+    const isReturned = item.status === 'Returned';
+    
+    const getStatusBadge = () => {
+      if (isPending) return { text: '⏳ รอการอนุมัติการยืม', style: styles.statusBadgePending };
+      if (isBorrowed) return { text: '📖 กำลังยืม', style: styles.statusBadgeBorrowed };
+      if (isPendingReturn) return { text: '⏳ รอการอนุมัติการคืน', style: styles.statusBadgePendingReturn };
+      if (isReturned) return { text: '✅ คืนแล้ว', style: styles.statusBadgeReturned };
+      return { text: item.status, style: styles.statusBadgeDefault };
+    };
+
+    const statusBadge = getStatusBadge();
     
     return (
-      <View style={[styles.transactionCard, isBorrowed && styles.transactionCardBorrowed]}>
+      <View style={[
+        styles.transactionCard,
+        isPending && styles.transactionCardPending,
+        isBorrowed && styles.transactionCardBorrowed,
+        isPendingReturn && styles.transactionCardPendingReturn,
+      ]}>
         <View style={styles.transactionHeader}>
           <View style={styles.transactionStatusContainer}>
-            <View style={[styles.statusBadge, isBorrowed ? styles.statusBadgeBorrowed : styles.statusBadgeReturned]}>
-              <Text style={styles.statusBadgeText}>
-                {isBorrowed ? '📖 กำลังยืม' : '✅ คืนแล้ว'}
-              </Text>
+            <View style={[styles.statusBadge, statusBadge.style]}>
+              <Text style={styles.statusBadgeText}>{statusBadge.text}</Text>
             </View>
           </View>
           <Text style={styles.transactionId}>ID: {item.id.substring(0, 8)}...</Text>
@@ -233,14 +293,25 @@ export default function TransactionsScreen() {
           )}
         </View>
 
-        {isBorrowed && isAdmin && (
+        {isAdmin && isPending && (
           <TouchableOpacity
-            style={styles.returnButton}
-            onPress={() => handleReturnBook(item)}
+            style={styles.approveButton}
+            onPress={() => handleApproveBorrow(item)}
             activeOpacity={0.8}
           >
-            <Text style={styles.returnButtonIcon}>↩️</Text>
-            <Text style={styles.returnButtonText}>คืนหนังสือ</Text>
+            <Text style={styles.approveButtonIcon}>✅</Text>
+            <Text style={styles.approveButtonText}>อนุมัติการยืม</Text>
+          </TouchableOpacity>
+        )}
+
+        {isAdmin && isPendingReturn && (
+          <TouchableOpacity
+            style={styles.approveButton}
+            onPress={() => handleApproveReturn(item)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.approveButtonIcon}>✅</Text>
+            <Text style={styles.approveButtonText}>อนุมัติการคืน</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -308,6 +379,13 @@ export default function TransactionsScreen() {
         // Admin view: Show all transactions
         <>
           <View style={styles.statsContainer}>
+            <View style={[styles.statCard, styles.statCardPending]}>
+              <Text style={styles.statIcon}>⏳</Text>
+              <Text style={styles.statNumber}>
+                {transactions.filter(t => t.status === 'Pending' || t.status === 'PendingReturn').length}
+              </Text>
+              <Text style={styles.statLabel}>รออนุมัติ</Text>
+            </View>
             <View style={[styles.statCard, styles.statCardBorrowed]}>
               <Text style={styles.statIcon}>📖</Text>
               <Text style={styles.statNumber}>{transactions.filter(t => t.status === 'Borrowed').length}</Text>
@@ -317,11 +395,6 @@ export default function TransactionsScreen() {
               <Text style={styles.statIcon}>✅</Text>
               <Text style={styles.statNumber}>{transactions.filter(t => t.status === 'Returned').length}</Text>
               <Text style={styles.statLabel}>คืนแล้ว</Text>
-            </View>
-            <View style={[styles.statCard, styles.statCardTotal]}>
-              <Text style={styles.statIcon}>📊</Text>
-              <Text style={styles.statNumber}>{transactions.length}</Text>
-              <Text style={styles.statLabel}>ทั้งหมด</Text>
             </View>
           </View>
 
@@ -715,9 +788,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  transactionCardBorrowed: {
+  transactionCardPending: {
     borderLeftWidth: 5,
     borderLeftColor: '#F59E0B',
+  },
+  transactionCardBorrowed: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#6366F1',
+  },
+  transactionCardPendingReturn: {
+    borderLeftWidth: 5,
+    borderLeftColor: '#10B981',
   },
   transactionHeader: {
     flexDirection: 'row',
@@ -737,11 +818,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignSelf: 'flex-start',
   },
-  statusBadgeBorrowed: {
+  statusBadgePending: {
     backgroundColor: '#FEF3C7',
+  },
+  statusBadgeBorrowed: {
+    backgroundColor: '#DBEAFE',
+  },
+  statusBadgePendingReturn: {
+    backgroundColor: '#D1FAE5',
   },
   statusBadgeReturned: {
     backgroundColor: '#D1FAE5',
+  },
+  statusBadgeDefault: {
+    backgroundColor: '#F3F4F6',
   },
   statusBadgeText: {
     fontSize: 14,
@@ -779,6 +869,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1F2937',
     fontWeight: '600',
+  },
+  approveButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 10,
+    ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
+  },
+  approveButtonIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  approveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   returnButton: {
     backgroundColor: '#10B981',

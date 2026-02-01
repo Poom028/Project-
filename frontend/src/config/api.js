@@ -39,6 +39,8 @@ export const API_ENDPOINTS = {
   ADMIN_STATS: `${API_BASE_URL}/admin/stats`,
   ADMIN_TRANSACTIONS: `${API_BASE_URL}/admin/transactions`,
   ADMIN_TRANSACTION_BY_ID: (id) => `${API_BASE_URL}/admin/transactions/${id}`,
+  ADMIN_APPROVE_BORROW: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-borrow`,
+  ADMIN_APPROVE_RETURN: (id) => `${API_BASE_URL}/admin/transactions/${id}/approve-return`,
   
   // Transactions
   BORROW: `${API_BASE_URL}/transactions/borrow`,

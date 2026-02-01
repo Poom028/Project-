@@ -27,7 +27,7 @@ class Transaction(Document):
     book_id: str
     borrow_date: datetime = Field(default_factory=datetime.utcnow)
     return_date: Optional[datetime] = None
-    status: str = "Borrowed" # Borrowed, Returned
+    status: str = "Pending" # Pending, Borrowed, PendingReturn, Returned
 
     class Settings:
         name = "transactions"

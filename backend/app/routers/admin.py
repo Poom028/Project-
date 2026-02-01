@@ -131,3 +131,81 @@ async def get_transaction_by_id(
         return_date=transaction.return_date,
         status=transaction.status
     )
+
+@router.post("/transactions/{transaction_id}/approve-borrow", response_model=TransactionResponse)
+async def approve_borrow(
+    transaction_id: str,
+    admin: User = Depends(get_current_admin)
+):
+    """Approve a borrow request (Admin only)"""
+    transaction = await Transaction.get(PydanticObjectId(transaction_id))
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    if transaction.status != "Pending":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Transaction is not pending. Current status: {transaction.status}"
+        )
+    
+    # Validate Book and Availability
+    book = await Book.get(PydanticObjectId(transaction.book_id))
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    if book.quantity < 1:
+        raise HTTPException(status_code=400, detail="Book out of stock")
+    
+    # Update transaction status to Borrowed
+    transaction.status = "Borrowed"
+    await transaction.save()
+    
+    # Decrease Book Quantity
+    book.quantity -= 1
+    await book.save()
+    
+    return TransactionResponse(
+        id=str(transaction.id),
+        user_id=transaction.user_id,
+        book_id=transaction.book_id,
+        borrow_date=transaction.borrow_date,
+        return_date=transaction.return_date,
+        status=transaction.status
+    )
+
+@router.post("/transactions/{transaction_id}/approve-return", response_model=TransactionResponse)
+async def approve_return(
+    transaction_id: str,
+    admin: User = Depends(get_current_admin)
+):
+    """Approve a return request (Admin only)"""
+    transaction = await Transaction.get(PydanticObjectId(transaction_id))
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    if transaction.status != "PendingReturn":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Transaction is not pending return. Current status: {transaction.status}"
+        )
+    
+    # Update transaction status to Returned
+    from datetime import datetime
+    transaction.return_date = datetime.utcnow()
+    transaction.status = "Returned"
+    await transaction.save()
+    
+    # Increase Book Quantity
+    book = await Book.get(PydanticObjectId(transaction.book_id))
+    if book:
+        book.quantity += 1
+        await book.save()
+    
+    return TransactionResponse(
+        id=str(transaction.id),
+        user_id=transaction.user_id,
+        book_id=transaction.book_id,
+        borrow_date=transaction.borrow_date,
+        return_date=transaction.return_date,
+        status=transaction.status
+    )
