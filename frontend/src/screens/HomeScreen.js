@@ -17,11 +17,21 @@ export default function HomeScreen() {
           text: 'ออกจากระบบ',
           style: 'destructive',
           onPress: async () => {
-            await logout();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
+            try {
+              await logout();
+              // Navigate to Login screen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Fallback: navigate anyway
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            }
           },
         },
       ]

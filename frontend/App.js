@@ -34,43 +34,39 @@ function AppNavigator() {
           },
         }}
       >
-        {!isAuthenticated ? (
-          <>
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Register"
-              component={RegisterScreen}
-              options={{ headerShown: false }}
-            />
-          </>
-        ) : (
-          <>
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{ title: 'ระบบยืม-คืนหนังสือ' }}
-            />
-            <Stack.Screen
-              name="Books"
-              component={BooksScreen}
-              options={{ title: 'จัดการหนังสือ' }}
-            />
-            <Stack.Screen
-              name="Users"
-              component={UsersScreen}
-              options={{ title: 'จัดการผู้ใช้' }}
-            />
-            <Stack.Screen
-              name="Transactions"
-              component={TransactionsScreen}
-              options={{ title: 'การยืม-คืน' }}
-            />
-          </>
-        )}
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ 
+            title: 'ระบบยืม-คืนหนังสือ',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Books"
+          component={BooksScreen}
+          options={{ title: 'จัดการหนังสือ' }}
+        />
+        <Stack.Screen
+          name="Users"
+          component={UsersScreen}
+          options={{ title: 'จัดการผู้ใช้' }}
+        />
+        <Stack.Screen
+          name="Transactions"
+          component={TransactionsScreen}
+          options={{ title: 'การยืม-คืน' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
