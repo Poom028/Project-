@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
+  Image,
+  Animated,
+  Easing,
 } from 'react-native';
 import { booksAPI, transactionsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -27,8 +30,35 @@ export default function UserBorrowScreen() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const headerScale = useRef(new Animated.Value(0.95)).current;
+
   useEffect(() => {
     loadBooks();
+    
+    // Start initial animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 700,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(headerScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   const loadBooks = async () => {
@@ -220,38 +250,103 @@ export default function UserBorrowScreen() {
       book.isbn.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderBook = ({ item }) => (
-    <View style={styles.bookCard}>
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>โดย {item.author}</Text>
-        <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
-        <View style={styles.quantityContainer}>
-          <Text style={styles.quantityLabel}>จำนวน:</Text>
-          <Text
-            style={[
-              styles.quantity,
-              item.quantity > 0 ? styles.quantityAvailable : styles.quantityUnavailable,
-            ]}
-          >
-            {item.quantity} เล่ม
-          </Text>
-        </View>
-      </View>
-      <TouchableOpacity
+  // Book Item Component with animation
+  const BookItem = ({ item, index, onBorrow, borrowing }) => {
+    const cardAnim = useRef(new Animated.Value(0)).current;
+    
+    useEffect(() => {
+      Animated.timing(cardAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: (index || 0) * 100,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return (
+      <Animated.View
         style={[
-          styles.borrowButton,
-          (item.quantity < 1 || borrowing) && styles.borrowButtonDisabled,
+          styles.bookCard,
+          Platform.OS === 'web' && styles.bookCardWeb,
+          {
+            opacity: cardAnim,
+            transform: [
+              {
+                translateY: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+              {
+                scale: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.95, 1],
+                }),
+              },
+            ],
+          },
         ]}
-        onPress={() => handleBorrow(item)}
-        disabled={item.quantity < 1 || borrowing}
       >
-        <Text style={styles.borrowButtonText}>
-          {item.quantity > 0 ? 'ยืมหนังสือ' : 'หมดแล้ว'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+        <View style={styles.bookImageContainer}>
+          {item.image_url ? (
+            <Image
+              source={{ uri: item.image_url }}
+              style={styles.bookImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.bookIconContainer}>
+              <Text style={styles.bookIcon}>📖</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.bookInfo}>
+          <Text style={styles.bookTitle}>{item.title}</Text>
+          <Text style={styles.bookAuthor}>โดย {item.author}</Text>
+          <View style={styles.bookMeta}>
+            <Text style={styles.bookIsbn}>ISBN: {item.isbn}</Text>
+            <View
+              style={[
+                styles.quantityBadge,
+                item.quantity > 0
+                  ? styles.quantityAvailable
+                  : styles.quantityUnavailable,
+              ]}
+            >
+              <Text style={styles.quantityText}>{item.quantity} เล่ม</Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.borrowButton,
+            (item.quantity < 1 || borrowing) && styles.borrowButtonDisabled,
+            Platform.OS === 'web' && styles.borrowButtonWeb,
+          ]}
+          onPress={() => onBorrow(item)}
+          disabled={item.quantity < 1 || borrowing}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.borrowButtonText}>
+            {item.quantity > 0 ? 'ยืมหนังสือ' : 'หมดแล้ว'}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  const renderBook = ({ item, index }) => {
+    return (
+      <BookItem
+        item={item}
+        index={index || 0}
+        onBorrow={handleBorrow}
+        borrowing={borrowing}
+      />
+    );
+  };
 
   if (loading) {
     return (
@@ -265,42 +360,96 @@ export default function UserBorrowScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>📚 ยืมหนังสือ</Text>
-        <Text style={styles.headerSubtitle}>เลือกหนังสือที่ต้องการยืม</Text>
-      </View>
+      <Animated.View
+        style={[
+          styles.header,
+          { transform: [{ scale: headerScale }] },
+          Platform.OS === 'web' && styles.headerWeb,
+        ]}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.headerIconContainer}>
+            <Text style={styles.headerIcon}>📚</Text>
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>ยืมหนังสือ</Text>
+            <Text style={styles.headerSubtitle}>เลือกหนังสือที่ต้องการยืม</Text>
+          </View>
+        </View>
+      </Animated.View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="ค้นหาหนังสือ (ชื่อ, ผู้แต่ง, ISBN)..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#9CA3AF"
-        />
-      </View>
+      <Animated.View
+        style={[
+          styles.searchContainer,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <View style={styles.searchInputContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="ค้นหาหนังสือ (ชื่อ, ผู้แต่ง, ISBN)..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#9CA3AF"
+          />
+        </View>
+      </Animated.View>
 
       {/* History Button */}
-      <TouchableOpacity style={styles.historyButton} onPress={loadHistory}>
-        <Text style={styles.historyButtonText}>📖 ดูประวัติการยืม-คืน</Text>
-      </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.historyButtonContainer,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.historyButton, Platform.OS === 'web' && styles.historyButtonWeb]}
+          onPress={loadHistory}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.historyButtonIcon}>📖</Text>
+          <Text style={styles.historyButtonText}>ดูประวัติการยืม-คืน</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* Books List */}
-      <FlatList
-        data={filteredBooks}
-        renderItem={renderBook}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={loadBooks} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>ไม่พบหนังสือ</Text>
-          </View>
-        }
-      />
+      <Animated.View
+        style={[
+          styles.listWrapper,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <FlatList
+          data={filteredBooks}
+          renderItem={renderBook}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={loadBooks}
+              tintColor="#6366F1"
+            />
+          }
+          showsVerticalScrollIndicator={true}
+          ListEmptyComponent={
+            <Animated.View
+              style={[
+                styles.emptyContainer,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
+            >
+              <Text style={styles.emptyIcon}>📚</Text>
+              <Text style={styles.emptyText}>ไม่พบหนังสือ</Text>
+              <Text style={styles.emptySubtext}>
+                ลองค้นหาด้วยคำอื่น หรือรอให้ Admin เพิ่มหนังสือใหม่
+              </Text>
+            </Animated.View>
+          }
+        />
+      </Animated.View>
 
       {/* History Modal */}
       <Modal
@@ -391,102 +540,213 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     color: '#6B7280',
+    fontSize: 16,
   },
   header: {
     backgroundColor: '#6366F1',
-    padding: 20,
+    padding: 24,
     paddingTop: 60,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    ...createShadow({ color: '#6366F1', offsetY: 4, opacity: 0.3, radius: 8 }),
+  },
+  headerWeb: {
+    ...(Platform.OS === 'web' && {
+      background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+    }),
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  headerIcon: {
+    fontSize: 28,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
   },
   searchContainer: {
-    padding: 15,
+    padding: 16,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 8 }),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchIcon: {
+    fontSize: 20,
+    marginRight: 12,
+    color: '#9CA3AF',
   },
   searchInput: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
+    flex: 1,
+    paddingVertical: 16,
     fontSize: 16,
-    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.1, radius: 4 }),
+    color: '#1F2937',
+  },
+  historyButtonContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   historyButton: {
     backgroundColor: '#10B981',
-    marginHorizontal: 15,
-    marginBottom: 15,
-    padding: 15,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
+    justifyContent: 'center',
+    ...createShadow({ color: '#10B981', offsetY: 4, opacity: 0.3, radius: 8 }),
+    borderLeftWidth: 4,
+    borderLeftColor: '#059669',
+  },
+  historyButtonWeb: {
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      ':hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 8px 16px rgba(16, 185, 129, 0.4)',
+      },
+    }),
+  },
+  historyButtonIcon: {
+    fontSize: 20,
+    marginRight: 8,
   },
   historyButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
+  listWrapper: {
+    flex: 1,
+  },
   listContainer: {
-    padding: 15,
+    padding: 16,
   },
   bookCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
-    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.1, radius: 8 }),
-  },
-  bookInfo: {
-    marginBottom: 15,
-  },
-  bookTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 5,
-  },
-  bookAuthor: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 5,
-  },
-  bookIsbn: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 10,
-  },
-  quantityContainer: {
+    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.08, radius: 12 }),
+    borderLeftWidth: 4,
+    borderLeftColor: '#6366F1',
   },
-  quantityLabel: {
+  bookCardWeb: {
+    ...(Platform.OS === 'web' && {
+      cursor: 'default',
+      transition: 'all 0.3s ease',
+      ':hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+      },
+    }),
+  },
+  bookImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginRight: 16,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  bookImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bookIconContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#6366F120',
+  },
+  bookIcon: {
+    fontSize: 36,
+  },
+  bookInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  bookTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+  bookAuthor: {
     fontSize: 14,
     color: '#6B7280',
-    marginRight: 5,
+    marginBottom: 8,
   },
-  quantity: {
-    fontSize: 16,
-    fontWeight: '600',
+  bookMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bookIsbn: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  quantityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   quantityAvailable: {
-    color: '#10B981',
+    backgroundColor: '#10B98120',
   },
   quantityUnavailable: {
-    color: '#EF4444',
+    backgroundColor: '#EF444420',
+  },
+  quantityText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F2937',
   },
   borrowButton: {
     backgroundColor: '#6366F1',
-    padding: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
+    minWidth: 120,
     ...createShadow({ color: '#6366F1', offsetY: 2, opacity: 0.3, radius: 4 }),
+  },
+  borrowButtonWeb: {
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      ':hover': {
+        backgroundColor: '#4F46E5',
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+      },
+    }),
   },
   borrowButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -494,16 +754,27 @@ const styles = StyleSheet.create({
   },
   borrowButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   emptyContainer: {
-    padding: 40,
+    padding: 60,
     alignItems: 'center',
   },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
     color: '#6B7280',
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -513,57 +784,70 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: 24,
     width: '90%',
     maxHeight: '80%',
-    ...createShadow({ color: '#000', offsetY: 4, opacity: 0.3, radius: 12 }),
+    ...createShadow({ color: '#000', offsetY: 8, opacity: 0.3, radius: 16 }),
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
   },
   closeButton: {
-    padding: 5,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeButtonText: {
-    fontSize: 24,
+    fontSize: 18,
     color: '#6B7280',
   },
   historyItem: {
-    padding: 15,
-    marginBottom: 10,
+    padding: 16,
+    marginBottom: 12,
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#6366F1',
+    ...createShadow({ color: '#000', offsetY: 1, opacity: 0.05, radius: 4 }),
   },
   historyStatus: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   historyDate: {
     fontSize: 14,
     color: '#6B7280',
+    marginBottom: 4,
   },
   emptyHistoryText: {
     textAlign: 'center',
     color: '#6B7280',
-    padding: 20,
+    padding: 40,
+    fontSize: 16,
   },
   returnButton: {
     backgroundColor: '#10B981',
-    padding: 12,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 12,
     ...createShadow({ color: '#10B981', offsetY: 2, opacity: 0.3, radius: 4 }),
   },
   returnButtonText: {
@@ -572,3 +856,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+// Add CSS animations for web
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+  `;
+  document.head.appendChild(style);
+}

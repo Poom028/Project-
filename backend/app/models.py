@@ -8,6 +8,7 @@ class Book(Document):
     author: str
     isbn: Indexed(str, unique=True)
     quantity: int = 0
+    image_url: Optional[str] = None
 
     class Settings:
         name = "books"

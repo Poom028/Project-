@@ -11,6 +11,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { booksAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -32,12 +34,15 @@ export default function BooksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingBookId, setEditingBookId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     author: '',
     isbn: '',
     quantity: '',
+    image_url: '',
   });
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     loadBooks();
@@ -63,6 +68,63 @@ export default function BooksScreen() {
     loadBooks();
   };
 
+  const handleImageInput = (text) => {
+    setFormData({ ...formData, image_url: text });
+    if (text && (text.startsWith('http') || text.startsWith('data:') || text.startsWith('/'))) {
+      setImagePreview(text);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
+  const handleFileUpload = () => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = reader.result;
+            setFormData({ ...formData, image_url: base64String });
+            setImagePreview(base64String);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    } else {
+      Alert.alert('Info', 'การอัปโหลดไฟล์รองรับเฉพาะบนเว็บ กรุณาใส่ URL ของรูปภาพแทน');
+    }
+  };
+
+  const handleEditBook = (book) => {
+    console.log('[DEBUG] Editing book:', book);
+    setEditingBookId(book.id);
+    setFormData({
+      title: book.title || '',
+      author: book.author || '',
+      isbn: book.isbn || '',
+      quantity: book.quantity?.toString() || '',
+      image_url: book.image_url || '',
+    });
+    if (book.image_url) {
+      setImagePreview(book.image_url);
+    } else {
+      setImagePreview(null);
+    }
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setEditingBookId(null);
+    setFormData({ title: '', author: '', isbn: '', quantity: '', image_url: '' });
+    setImagePreview(null);
+  };
+
   const handleCreateBook = async () => {
     if (!formData.title || !formData.author || !formData.isbn || !formData.quantity) {
       Alert.alert('Error', 'กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -70,19 +132,34 @@ export default function BooksScreen() {
     }
 
     try {
-      await booksAPI.create({
+      const bookData = {
         title: formData.title,
         author: formData.author,
         isbn: formData.isbn,
         quantity: parseInt(formData.quantity),
-      });
-      Alert.alert('Success', 'เพิ่มหนังสือสำเร็จ');
-      setModalVisible(false);
-      setFormData({ title: '', author: '', isbn: '', quantity: '' });
+        image_url: formData.image_url || null,
+      };
+      
+      if (editingBookId) {
+        // Update existing book
+        console.log('[DEBUG] Updating book with ID:', editingBookId, 'data:', bookData);
+        const result = await booksAPI.update(editingBookId, bookData);
+        console.log('[DEBUG] Book updated successfully:', result);
+        Alert.alert('Success', 'แก้ไขหนังสือสำเร็จ');
+      } else {
+        // Create new book
+        console.log('[DEBUG] Creating book with data:', bookData);
+        const result = await booksAPI.create(bookData);
+        console.log('[DEBUG] Book created successfully:', result);
+        Alert.alert('Success', 'เพิ่มหนังสือสำเร็จ');
+      }
+      
+      handleCloseModal();
       loadBooks();
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.detail || 'ไม่สามารถเพิ่มหนังสือได้');
-      console.error(error);
+      console.error('[ERROR] Failed to save book:', error);
+      console.error('[ERROR] Error response:', error.response?.data);
+      Alert.alert('Error', error.response?.data?.detail || 'ไม่สามารถบันทึกข้อมูลได้');
     }
   };
 
@@ -217,7 +294,15 @@ export default function BooksScreen() {
     return (
       <View style={styles.bookCard}>
         <View style={styles.bookIconContainer}>
-          <Text style={styles.bookIcon}>📖</Text>
+          {item.image_url ? (
+            <Image 
+              source={{ uri: item.image_url }} 
+              style={styles.bookImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={styles.bookIcon}>📖</Text>
+          )}
         </View>
         <View style={styles.bookInfo}>
           <Text style={styles.bookTitle}>{item.title}</Text>
@@ -229,16 +314,28 @@ export default function BooksScreen() {
             </View>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => {
-            console.log('Delete button clicked for book:', item.id, item.title);
-            handleDeleteBook(item.id);
-          }}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.deleteIcon}>🗑️</Text>
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => {
+              console.log('Edit button clicked for book:', item.id, item.title);
+              handleEditBook(item);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.editIcon}>✏️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => {
+              console.log('Delete button clicked for book:', item.id, item.title);
+              handleDeleteBook(item.id);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.deleteIcon}>🗑️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -261,7 +358,12 @@ export default function BooksScreen() {
         </View>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setModalVisible(true)}
+          onPress={() => {
+            setEditingBookId(null);
+            setFormData({ title: '', author: '', isbn: '', quantity: '', image_url: '' });
+            setImagePreview(null);
+            setModalVisible(true);
+          }}
           activeOpacity={0.8}
         >
           <Text style={styles.addButtonIcon}>+</Text>
@@ -296,9 +398,11 @@ export default function BooksScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>เพิ่มหนังสือใหม่</Text>
+              <Text style={styles.modalTitle}>
+                {editingBookId ? 'แก้ไขหนังสือ' : 'เพิ่มหนังสือใหม่'}
+              </Text>
               <TouchableOpacity
-                onPress={() => setModalVisible(false)}
+                onPress={handleCloseModal}
                 style={styles.closeButton}
               >
                 <Text style={styles.closeButtonText}>✕</Text>
@@ -335,6 +439,7 @@ export default function BooksScreen() {
                 placeholderTextColor="#9CA3AF"
                 value={formData.isbn}
                 onChangeText={(text) => setFormData({ ...formData, isbn: text })}
+                editable={!editingBookId}
               />
             </View>
             
@@ -348,6 +453,46 @@ export default function BooksScreen() {
                 onChangeText={(text) => setFormData({ ...formData, quantity: text })}
                 keyboardType="numeric"
               />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>รูปภาพหนังสือ (URL หรืออัปโหลดไฟล์)</Text>
+              <View style={styles.imageInputContainer}>
+                <TextInput
+                  style={[styles.input, styles.imageInput]}
+                  placeholder="วาง URL รูปภาพ หรือคลิกปุ่มอัปโหลด"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.image_url}
+                  onChangeText={handleImageInput}
+                />
+                {Platform.OS === 'web' && (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={handleFileUpload}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.uploadButtonText}>📷 อัปโหลด</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {imagePreview && (
+                <View style={styles.imagePreviewContainer}>
+                  <Image 
+                    source={{ uri: imagePreview }} 
+                    style={styles.imagePreview}
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => {
+                      setFormData({ ...formData, image_url: '' });
+                      setImagePreview(null);
+                    }}
+                  >
+                    <Text style={styles.removeImageButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             <View style={styles.modalButtons}>
@@ -364,7 +509,9 @@ export default function BooksScreen() {
                 onPress={handleCreateBook}
                 activeOpacity={0.8}
               >
-                <Text style={styles.submitButtonText}>บันทึก</Text>
+                <Text style={styles.submitButtonText}>
+                  {editingBookId ? 'อัปเดต' : 'บันทึก'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -451,9 +598,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
   },
   bookIcon: {
     fontSize: 28,
+  },
+  bookImage: {
+    width: '100%',
+    height: '100%',
   },
   bookInfo: {
     flex: 1,
@@ -494,9 +646,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1F2937',
   },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editButton: {
+    padding: 8,
+  },
+  editIcon: {
+    fontSize: 20,
+  },
   deleteButton: {
     padding: 8,
-    marginLeft: 8,
   },
   deleteIcon: {
     fontSize: 20,
@@ -601,5 +763,54 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  imageInputContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  imageInput: {
+    flex: 1,
+  },
+  uploadButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imagePreviewContainer: {
+    marginTop: 12,
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...createShadow({ color: '#000', offsetY: 2, opacity: 0.2, radius: 4 }),
+  },
+  removeImageButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

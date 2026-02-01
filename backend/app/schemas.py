@@ -8,6 +8,7 @@ class BookBase(BaseModel):
     author: str
     isbn: str
     quantity: int
+    image_url: Optional[str] = None
 
 class BookCreate(BookBase):
     pass
@@ -16,6 +17,7 @@ class BookUpdate(BaseModel):
     title: Optional[str] = None
     author: Optional[str] = None
     quantity: Optional[int] = None
+    image_url: Optional[str] = None
 
 class BookResponse(BookBase):
     id: str
