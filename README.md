@@ -4,17 +4,23 @@
 
 ## เทคโนโลยีที่ใช้
 
-- **Backend Framework**: FastAPI
+### Backend
+- **Framework**: FastAPI
 - **Database**: MongoDB 6.0
 - **ODM**: Beanie
-- **Testing**: Pytest
+- **Testing**: Pytest (10 test cases)
 - **Containerization**: Docker & Docker Compose
+
+### Frontend
+- **Framework**: Expo (React Native)
+- **Navigation**: React Navigation
+- **HTTP Client**: Axios
 
 ## โครงสร้างโปรเจกต์
 
 ```
 .
-├── app/
+├── app/                     # Backend (FastAPI)
 │   ├── main.py              # FastAPI application entry point
 │   ├── database.py          # Database connection และ initialization
 │   ├── models.py            # MongoDB models (Book, User, Transaction)
@@ -23,9 +29,15 @@
 │       ├── books.py         # API endpoints สำหรับจัดการหนังสือ
 │       ├── users.py         # API endpoints สำหรับจัดการผู้ใช้
 │       └── transactions.py  # API endpoints สำหรับการยืม-คืนหนังสือ
-├── tests/
+├── frontend/                # Frontend (Expo)
+│   ├── src/
+│   │   ├── config/          # API configuration
+│   │   ├── services/        # API service functions
+│   │   └── screens/         # App screens
+│   └── App.js               # Main app component
+├── tests/                   # Backend tests
 │   ├── conftest.py          # Pytest configuration และ fixtures
-│   └── test_api.py          # Unit tests (12 test cases)
+│   └── test_api.py          # Unit tests (10 test cases)
 ├── docker-compose.yml       # Docker Compose configuration
 ├── Dockerfile               # Docker image definition
 └── requirements.txt         # Python dependencies
@@ -127,20 +139,53 @@ docker-compose exec backend pytest tests/test_api.py::test_create_user -v
 
 ## Test Cases
 
-ระบบมี **12 test cases** ที่ครอบคลุม:
+ระบบมี **10 test cases** ที่ครอบคลุม:
 
 1. ✅ Create User (Success)
 2. ✅ Create Book (Success)
 3. ✅ Get Book List
 4. ✅ Borrow Book (Success)
 5. ✅ Borrow Book (Fail - Out of stock)
-6. ✅ Borrow Book (Fail - User not found)
-7. ✅ Return Book (Success)
-8. ✅ Return Book (Fail - Transaction not found)
-9. ✅ Return Book (Fail - Already returned)
-10. ✅ Get User Borrow History
-11. ✅ Delete Book
-12. ✅ Check ISBN Uniqueness
+6. ✅ Return Book (Success)
+7. ✅ Return Book (Fail - Transaction not found)
+8. ✅ Get User Borrow History
+9. ✅ Delete Book
+10. ✅ Check ISBN Uniqueness
+
+## Frontend (Expo)
+
+### การรัน Frontend
+
+1. **ติดตั้ง dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **รัน Backend ก่อน:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **รัน Frontend:**
+
+   **Web Browser:**
+   ```bash
+   npm run web
+   ```
+
+   **Mobile (Expo Go):**
+   ```bash
+   npm start
+   ```
+   แล้วสแกน QR Code ด้วย Expo Go app
+
+### การเชื่อมต่อ Frontend กับ Backend
+
+- **Web Browser**: เชื่อมต่ออัตโนมัติที่ `http://localhost:8000`
+- **Mobile (Expo Go)**: แก้ไข `src/config/api.js` ให้ใช้ IP address ของเครื่อง
+
+**ดูรายละเอียดเพิ่มเติม:** [frontend/README.md](frontend/README.md)
 
 ## ตัวอย่างการใช้งาน API
 
