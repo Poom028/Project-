@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { reset } from '../utils/navigationRef';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function HomeScreen() {
@@ -19,7 +20,7 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Logout first
+              // Logout first - this will update isAuthenticated to false
               await logout();
               
               // For web, reload the page to ensure clean state
@@ -31,20 +32,11 @@ export default function HomeScreen() {
               // For mobile, use navigation reset
               // Wait a bit to ensure state is updated
               setTimeout(() => {
-                try {
-                  navigation.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [{ name: 'Login' }],
-                    })
-                  );
-                } catch (e1) {
-                  console.error('Navigation reset failed:', e1);
-                  try {
-                    navigation.replace('Login');
-                  } catch (e2) {
-                    console.error('Navigation replace failed:', e2);
-                  }
+                if (navigationRef.isReady()) {
+                  reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }],
+                  });
                 }
               }, 100);
             } catch (error) {
@@ -54,7 +46,12 @@ export default function HomeScreen() {
                 window.location.reload();
               } else {
                 setTimeout(() => {
-                  navigation.replace('Login');
+                  if (navigationRef.isReady()) {
+                    reset({
+                      index: 0,
+                      routes: [{ name: 'Login' }],
+                    });
+                  }
                 }, 100);
               }
             }
