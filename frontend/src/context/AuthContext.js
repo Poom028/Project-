@@ -43,13 +43,17 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      console.log('AuthContext: Removing tokens from storage...');
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
+      console.log('AuthContext: Tokens removed');
     } catch (error) {
       console.error('Error removing storage:', error);
     }
+    console.log('AuthContext: Setting isAuthenticated to false');
     setIsAuthenticated(false);
     setUser(null);
+    console.log('AuthContext: Logout completed');
   };
 
   return (

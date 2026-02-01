@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { reset } from '../utils/navigationRef';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function HomeScreen() {
@@ -20,39 +19,46 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Logout: Starting logout process...');
+              
               // Logout first - this will update isAuthenticated to false
               await logout();
+              console.log('Logout: State updated, navigating to Login...');
               
               // For web, reload the page to ensure clean state
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.reload();
+                console.log('Logout: Web platform, reloading page...');
+                window.location.href = '/';
                 return;
               }
               
-              // For mobile, use navigation reset
-              // Wait a bit to ensure state is updated
-              setTimeout(() => {
-                if (navigationRef.isReady()) {
-                  reset({
-                    index: 0,
-                    routes: [{ name: 'Login' }],
-                  });
-                }
-              }, 100);
+              // For mobile, use navigation reset immediately
+              console.log('Logout: Mobile platform, resetting navigation...');
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
+              );
+              console.log('Logout: Navigation reset completed');
             } catch (error) {
               console.error('Logout error:', error);
               // Force reload/navigation even on error
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.reload();
+                window.location.href = '/';
               } else {
-                setTimeout(() => {
-                  if (navigationRef.isReady()) {
-                    reset({
+                try {
+                  navigation.dispatch(
+                    CommonActions.reset({
                       index: 0,
                       routes: [{ name: 'Login' }],
-                    });
-                  }
-                }, 100);
+                    })
+                  );
+                } catch (navError) {
+                  console.error('Navigation error:', navError);
+                  // Last resort: try replace
+                  navigation.replace('Login');
+                }
               }
             }
           },

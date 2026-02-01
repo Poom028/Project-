@@ -19,10 +19,16 @@ function AppNavigator() {
   useEffect(() => {
     // Navigate to Login when user logs out
     if (!isLoading && !isAuthenticated && navigationRef.isReady()) {
-      reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
+      console.log('App: User logged out, resetting navigation...');
+      try {
+        navigationRef.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+        console.log('App: Navigation reset successful');
+      } catch (error) {
+        console.error('App: Navigation reset error:', error);
+      }
     }
   }, [isAuthenticated, isLoading]);
 
