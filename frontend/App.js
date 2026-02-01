@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -14,13 +14,26 @@ const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const navigationRef = useRef(null);
+
+  useEffect(() => {
+    if (!isLoading && navigationRef.current) {
+      if (!isAuthenticated) {
+        // If logged out, navigate to Login
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+      }
+    }
+  }, [isAuthenticated, isLoading]);
 
   if (isLoading) {
     return null; // หรือแสดง loading screen
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <StatusBar style="auto" />
       <Stack.Navigator
         initialRouteName={isAuthenticated ? 'Home' : 'Login'}

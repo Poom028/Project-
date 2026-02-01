@@ -18,31 +18,12 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Logout first
+              // Logout - this will trigger useEffect in App.js to navigate
               await logout();
-              
-              // Use CommonActions.reset for reliable navigation
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                })
-              );
             } catch (error) {
               console.error('Logout error:', error);
-              // Fallback: try to navigate anyway
-              try {
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'Login' }],
-                  })
-                );
-              } catch (navError) {
-                console.error('Navigation error:', navError);
-                // Last resort: use replace
-                navigation.replace('Login');
-              }
+              // Force logout even if there's an error
+              await logout();
             }
           },
         },
