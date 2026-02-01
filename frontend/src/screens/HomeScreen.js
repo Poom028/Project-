@@ -22,39 +22,40 @@ export default function HomeScreen() {
               // Logout first
               await logout();
               
-              // For web, use window.location for reliable navigation
+              // For web, reload the page to ensure clean state
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.href = '/';
+                window.location.reload();
                 return;
               }
               
-              // For mobile, use navigation
-              // Try multiple methods to ensure it works
-              try {
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'Login' }],
-                  })
-                );
-              } catch (e1) {
+              // For mobile, use navigation reset
+              // Wait a bit to ensure state is updated
+              setTimeout(() => {
                 try {
-                  navigation.replace('Login');
-                } catch (e2) {
+                  navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'Login' }],
+                    })
+                  );
+                } catch (e1) {
+                  console.error('Navigation reset failed:', e1);
                   try {
-                    navigation.navigate('Login');
-                  } catch (e3) {
-                    console.error('All navigation methods failed:', e3);
+                    navigation.replace('Login');
+                  } catch (e2) {
+                    console.error('Navigation replace failed:', e2);
                   }
                 }
-              }
+              }, 100);
             } catch (error) {
               console.error('Logout error:', error);
-              // Force navigation even on error
+              // Force reload/navigation even on error
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.href = '/';
+                window.location.reload();
               } else {
-                navigation.replace('Login');
+                setTimeout(() => {
+                  navigation.replace('Login');
+                }, 100);
               }
             }
           },

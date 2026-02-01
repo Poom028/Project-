@@ -16,24 +16,40 @@ function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigationRef = useRef(null);
   const prevAuthRef = useRef(isAuthenticated);
+  const isNavigatingRef = useRef(false);
 
   useEffect(() => {
-    // Only navigate if auth state changed from true to false
-    if (!isLoading && navigationRef.current && prevAuthRef.current && !isAuthenticated) {
+    // Only navigate if auth state changed from true to false (logout)
+    if (
+      !isLoading && 
+      navigationRef.current && 
+      prevAuthRef.current === true && 
+      isAuthenticated === false &&
+      !isNavigatingRef.current
+    ) {
       // User just logged out
-      try {
-        navigationRef.current.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
-      } catch (error) {
-        console.error('Navigation error:', error);
+      isNavigatingRef.current = true;
+      setTimeout(() => {
         try {
-          navigationRef.current.replace('Login');
-        } catch (e2) {
-          console.error('Replace also failed:', e2);
+          if (navigationRef.current) {
+            navigationRef.current.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }
+        } catch (error) {
+          console.error('Navigation error:', error);
+          try {
+            if (navigationRef.current) {
+              navigationRef.current.replace('Login');
+            }
+          } catch (e2) {
+            console.error('Replace also failed:', e2);
+          }
+        } finally {
+          isNavigatingRef.current = false;
         }
-      }
+      }, 50);
     }
     prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated, isLoading]);
