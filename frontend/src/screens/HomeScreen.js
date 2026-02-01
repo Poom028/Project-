@@ -8,58 +8,49 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { logout, user } = useAuth();
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    console.log('=== LOGOUT BUTTON CLICKED ===');
     Alert.alert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบหรือไม่?',
       [
-        { text: 'ยกเลิก', style: 'cancel' },
+        { 
+          text: 'ยกเลิก', 
+          style: 'cancel',
+          onPress: () => console.log('Logout cancelled')
+        },
         {
           text: 'ออกจากระบบ',
           style: 'destructive',
           onPress: async () => {
+            console.log('=== LOGOUT CONFIRMED ===');
             try {
-              console.log('Logout: Starting logout process...');
+              console.log('Step 1: Calling logout()...');
               
               // Logout first - this will update isAuthenticated to false
               await logout();
-              console.log('Logout: State updated, navigating to Login...');
+              console.log('Step 2: Logout completed, isAuthenticated should be false now');
               
               // For web, reload the page to ensure clean state
               if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                console.log('Logout: Web platform, reloading page...');
-                // Use reload instead of href to ensure state is cleared
-                window.location.reload();
+                console.log('Step 3: Web platform detected, reloading page...');
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                  window.location.reload();
+                }, 100);
                 return;
               }
               
               // For mobile, use navigation reset immediately
-              console.log('Logout: Mobile platform, resetting navigation...');
+              console.log('Step 3: Mobile platform, navigating to Login...');
               // Use replace first, then reset if needed
-              try {
-                navigation.replace('Login');
-                console.log('Logout: Navigation replace completed');
-              } catch (replaceError) {
-                console.log('Logout: Replace failed, trying reset...', replaceError);
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'Login' }],
-                  })
-                );
-                console.log('Logout: Navigation reset completed');
-              }
-            } catch (error) {
-              console.error('Logout error:', error);
-              // Force reload/navigation even on error
-              if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                window.location.reload();
-              } else {
+              setTimeout(() => {
                 try {
+                  console.log('Step 4: Attempting navigation.replace...');
                   navigation.replace('Login');
-                } catch (navError) {
-                  console.error('Navigation error:', navError);
-                  // Last resort: try reset
+                  console.log('Step 5: Navigation replace successful');
+                } catch (replaceError) {
+                  console.log('Step 4: Replace failed, trying reset...', replaceError);
                   try {
                     navigation.dispatch(
                       CommonActions.reset({
@@ -67,15 +58,41 @@ export default function HomeScreen() {
                         routes: [{ name: 'Login' }],
                       })
                     );
+                    console.log('Step 5: Navigation reset successful');
                   } catch (resetError) {
-                    console.error('All navigation methods failed:', resetError);
+                    console.error('Step 5: All navigation methods failed:', resetError);
                   }
                 }
+              }, 200);
+            } catch (error) {
+              console.error('=== LOGOUT ERROR ===', error);
+              // Force reload/navigation even on error
+              if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.reload();
+              } else {
+                setTimeout(() => {
+                  try {
+                    navigation.replace('Login');
+                  } catch (navError) {
+                    console.error('Navigation error:', navError);
+                    try {
+                      navigation.dispatch(
+                        CommonActions.reset({
+                          index: 0,
+                          routes: [{ name: 'Login' }],
+                        })
+                      );
+                    } catch (resetError) {
+                      console.error('All navigation methods failed:', resetError);
+                    }
+                  }
+                }, 200);
               }
             }
           },
         },
-      ]
+      ],
+      { cancelable: true }
     );
   };
 
@@ -158,8 +175,13 @@ export default function HomeScreen() {
       <View style={styles.logoutContainer}>
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={handleLogout}
+          onPress={() => {
+            console.log('Logout button pressed!');
+            handleLogout();
+          }}
           activeOpacity={0.8}
+          accessible={true}
+          accessibilityLabel="ออกจากระบบ"
         >
           <Text style={styles.logoutIcon}>🚪</Text>
           <Text style={styles.logoutText}>ออกจากระบบ</Text>
