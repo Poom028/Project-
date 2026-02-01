@@ -117,10 +117,13 @@ export const adminAPI = {
 // Transactions API
 export const transactionsAPI = {
   borrow: async (userId, bookId) => {
+    console.log('transactionsAPI.borrow called with:', { userId, bookId });
+    console.log('Borrow URL:', API_ENDPOINTS.BORROW);
     const response = await api.post(API_ENDPOINTS.BORROW, {
       user_id: userId,
       book_id: bookId,
     });
+    console.log('Borrow response:', response.status, response.data);
     return response.data;
   },
   

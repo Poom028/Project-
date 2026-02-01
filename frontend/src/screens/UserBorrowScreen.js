@@ -10,13 +10,14 @@ import {
   RefreshControl,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { booksAPI, transactionsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { createShadow } from '../utils/shadowStyles';
 
 export default function UserBorrowScreen() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,36 +45,113 @@ export default function UserBorrowScreen() {
   };
 
   const handleBorrow = async (book) => {
-    if (book.quantity < 1) {
-      Alert.alert('ไม่สามารถยืมได้', 'หนังสือเล่มนี้หมดแล้ว');
+    console.log('=== BORROW BOOK START ===');
+    console.log('Book:', book);
+    console.log('User:', user);
+    console.log('Is authenticated:', isAuthenticated);
+
+    // Check if user is authenticated
+    if (!isAuthenticated || !user) {
+      console.log('User not authenticated');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('กรุณาเข้าสู่ระบบใหม่');
+      } else {
+        Alert.alert('Error', 'กรุณาเข้าสู่ระบบใหม่');
+      }
       return;
     }
 
-    Alert.alert(
-      'ยืมหนังสือ',
-      `คุณต้องการยืม "${book.title}" หรือไม่?`,
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'ยืม',
-          onPress: async () => {
-            setBorrowing(true);
-            try {
-              await transactionsAPI.borrow(user.id, book.id);
-              Alert.alert('สำเร็จ', 'ยืมหนังสือสำเร็จ');
-              loadBooks();
-            } catch (error) {
-              Alert.alert(
-                'Error',
-                error.response?.data?.detail || 'ไม่สามารถยืมหนังสือได้'
-              );
-            } finally {
-              setBorrowing(false);
-            }
-          },
-        },
-      ]
-    );
+    if (book.quantity < 1) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('หนังสือเล่มนี้หมดแล้ว');
+      } else {
+        Alert.alert('ไม่สามารถยืมได้', 'หนังสือเล่มนี้หมดแล้ว');
+      }
+      return;
+    }
+
+    // Confirm borrowing
+    let confirmed = false;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      confirmed = window.confirm(`คุณต้องการยืม "${book.title}" หรือไม่?`);
+    } else {
+      await new Promise((resolve) => {
+        Alert.alert(
+          'ยืมหนังสือ',
+          `คุณต้องการยืม "${book.title}" หรือไม่?`,
+          [
+            { 
+              text: 'ยกเลิก', 
+              style: 'cancel',
+              onPress: () => resolve(false)
+            },
+            {
+              text: 'ยืม',
+              onPress: () => resolve(true)
+            },
+          ]
+        );
+      }).then((result) => {
+        confirmed = result;
+      });
+    }
+
+    if (!confirmed) {
+      console.log('Borrow cancelled by user');
+      return;
+    }
+
+    setBorrowing(true);
+    try {
+      console.log('Calling transactionsAPI.borrow with:', {
+        userId: user.id,
+        bookId: book.id
+      });
+      const result = await transactionsAPI.borrow(user.id, book.id);
+      console.log('Borrow result:', result);
+      console.log('=== BORROW BOOK SUCCESS ===');
+      
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('ยืมหนังสือสำเร็จ');
+      } else {
+        Alert.alert('สำเร็จ', 'ยืมหนังสือสำเร็จ');
+      }
+      loadBooks();
+    } catch (error) {
+      console.error('=== BORROW BOOK ERROR ===');
+      console.error('Error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = 'ไม่สามารถยืมหนังสือได้';
+      
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Token หมดอายุ กรุณาเข้าสู่ระบบใหม่';
+        } else if (error.response.status === 403) {
+          errorMessage = 'คุณไม่มีสิทธิ์ยืมหนังสือนี้';
+        } else if (error.response.status === 404) {
+          errorMessage = error.response.data?.detail || 'ไม่พบหนังสือหรือผู้ใช้';
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data?.detail || 'หนังสือหมดแล้ว';
+        } else {
+          errorMessage = error.response.data?.detail || errorMessage;
+        }
+      } else if (error.request) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ';
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    } finally {
+      setBorrowing(false);
+    }
   };
 
   const loadHistory = async () => {
