@@ -1,0 +1,804 @@
+{
+	"info": {
+		"_postman_id": "library-system-api",
+		"name": "Library Management System API",
+		"description": "API Collection สำหรับระบบยืม-คืนหนังสือ\n\n## การใช้งาน:\n1. Import collection นี้เข้า Postman\n2. ตั้งค่า Environment Variables:\n   - `base_url`: http://localhost:8000\n   - `admin_token`: JWT token ของ Admin (ได้จาก login)\n   - `user_token`: JWT token ของ User (ได้จาก login)\n3. รัน requests ตามลำดับ\n\n## Authentication:\n- Register: สร้างบัญชีใหม่\n- Login: เข้าสู่ระบบและรับ token\n- Me: ดูข้อมูลผู้ใช้ปัจจุบัน\n\n## Books:\n- Get All Books: ดึงรายการหนังสือทั้งหมด (Public)\n- Get Book by ID: ดึงข้อมูลหนังสือตาม ID (Public)\n- Create Book: สร้างหนังสือใหม่ (Admin only)\n- Update Book: แก้ไขข้อมูลหนังสือ (Admin only)\n- Delete Book: ลบหนังสือ (Admin only)\n\n## Transactions:\n- Borrow Book: ยืมหนังสือ (สร้าง Pending transaction)\n- Return Book: คืนหนังสือ (เปลี่ยนเป็น PendingReturn)\n- Get User History: ดูประวัติการยืม-คืน\n\n## Admin:\n- Get All Users: ดึงรายการผู้ใช้ทั้งหมด\n- Get User by ID: ดึงข้อมูลผู้ใช้ตาม ID\n- Update User Role: แก้ไขบทบาทผู้ใช้\n- Delete User: ลบผู้ใช้\n- Get Statistics: ดึงสถิติระบบ\n- Get All Transactions: ดึงรายการ transactions ทั้งหมด\n- Approve Borrow: อนุมัติการยืมหนังสือ\n- Approve Return: อนุมัติการคืนหนังสือ",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('User registered:', response.username);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"email\": \"test@example.com\",\n    \"password\": \"testpass123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "สมัครสมาชิก - สร้างบัญชีผู้ใช้ใหม่\n\n**Request Body:**\n- username: ชื่อผู้ใช้ (ต้องไม่ซ้ำ)\n- email: อีเมล (ต้องไม่ซ้ำ)\n- password: รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)\n\n**Response:**\n- 201 Created: สมัครสำเร็จ\n- 400 Bad Request: username หรือ email ซ้ำ"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('user_token', response.access_token);",
+									"    console.log('Token saved to environment');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"testpass123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login-json",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login-json"
+							]
+						},
+						"description": "เข้าสู่ระบบ - รับ JWT token\n\n**Request Body:**\n- username: ชื่อผู้ใช้\n- password: รหัสผ่าน\n\n**Response:**\n- 200 OK: login สำเร็จ, ได้ token กลับมา\n- 401 Unauthorized: username หรือ password ผิด\n\n**Note:** Token จะถูกบันทึกใน environment variable `user_token` อัตโนมัติ"
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('admin_token', response.access_token);",
+									"    console.log('Admin token saved to environment');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login-json",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login-json"
+							]
+						},
+						"description": "เข้าสู่ระบบเป็น Admin\n\n**Request Body:**\n- username: admin\n- password: admin123\n\n**Response:**\n- 200 OK: login สำเร็จ, ได้ admin token กลับมา\n\n**Note:** Admin token จะถูกบันทึกใน environment variable `admin_token` อัตโนมัติ"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User (Me)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "ดึงข้อมูลผู้ใช้ปัจจุบัน - ต้อง login และส่ง token\n\n**Headers:**\n- Authorization: Bearer {token}\n\n**Response:**\n- 200 OK: ได้ข้อมูลผู้ใช้กลับมา\n- 401 Unauthorized: token หมดอายุหรือไม่ถูกต้อง"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication Endpoints - จัดการการยืนยันตัวตน"
+		},
+		{
+			"name": "Books",
+			"item": [
+				{
+					"name": "Get All Books",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"books",
+								""
+							]
+						},
+						"description": "ดึงรายการหนังสือทั้งหมด - Public endpoint (ไม่ต้อง login)\n\n**Response:**\n- 200 OK: รายการหนังสือทั้งหมด"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Book by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"books",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "BOOK_ID_HERE",
+									"description": "ID ของหนังสือ"
+								}
+							]
+						},
+						"description": "ดึงข้อมูลหนังสือตาม ID - Public endpoint (ไม่ต้อง login)\n\n**Path Parameters:**\n- id: ID ของหนังสือ\n\n**Response:**\n- 200 OK: ข้อมูลหนังสือ\n- 404 Not Found: ไม่พบหนังสือ"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"หนังสือทดสอบ\",\n    \"author\": \"ผู้แต่งทดสอบ\",\n    \"isbn\": \"1234567890\",\n    \"quantity\": 10,\n    \"image_url\": \"http://example.com/image.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/books/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"books",
+								""
+							]
+						},
+						"description": "สร้างหนังสือใหม่ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Request Body:**\n- title: ชื่อหนังสือ\n- author: ชื่อผู้แต่ง\n- isbn: ISBN (ต้องไม่ซ้ำ)\n- quantity: จำนวนหนังสือ\n- image_url: URL รูปภาพ (optional)\n\n**Response:**\n- 201 Created: สร้างสำเร็จ\n- 400 Bad Request: ISBN ซ้ำ\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"ชื่อหนังสือที่แก้ไข\",\n    \"quantity\": 20,\n    \"image_url\": \"http://example.com/new-image.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/books/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"books",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "BOOK_ID_HERE",
+									"description": "ID ของหนังสือ"
+								}
+							]
+						},
+						"description": "แก้ไขข้อมูลหนังสือ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- id: ID ของหนังสือ\n\n**Request Body:**\n- title: ชื่อหนังสือ (optional)\n- author: ชื่อผู้แต่ง (optional)\n- quantity: จำนวนหนังสือ (optional)\n- image_url: URL รูปภาพ (optional)\n\n**Response:**\n- 200 OK: แก้ไขสำเร็จ\n- 404 Not Found: ไม่พบหนังสือ\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/books/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"books",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "BOOK_ID_HERE",
+									"description": "ID ของหนังสือ"
+								}
+							]
+						},
+						"description": "ลบหนังสือ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- id: ID ของหนังสือ\n\n**Response:**\n- 200 OK: ลบสำเร็จ\n- 404 Not Found: ไม่พบหนังสือ\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				}
+			],
+			"description": "Books Endpoints - จัดการข้อมูลหนังสือ"
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Borrow Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"USER_ID_HERE\",\n    \"book_id\": \"BOOK_ID_HERE\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/transactions/borrow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transactions",
+								"borrow"
+							]
+						},
+						"description": "ยืมหนังสือ - สร้าง transaction แบบ Pending (รอ Admin อนุมัติ)\n\n**Headers:**\n- Authorization: Bearer {user_token}\n\n**Request Body:**\n- user_id: ID ของผู้ใช้ที่ต้องการยืม\n- book_id: ID ของหนังสือที่ต้องการยืม\n\n**Response:**\n- 200 OK: สร้าง transaction สำเร็จ (status = \"Pending\")\n- 400 Bad Request: หนังสือหมด หรือยืมซ้ำ\n- 404 Not Found: ไม่พบผู้ใช้หรือหนังสือ\n\n**Note:** จำนวนหนังสือ (quantity) จะยังไม่ลดลง จนกว่า Admin จะอนุมัติ"
+					},
+					"response": []
+				},
+				{
+					"name": "Return Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"USER_ID_HERE\",\n    \"book_id\": \"BOOK_ID_HERE\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/transactions/return",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transactions",
+								"return"
+							]
+						},
+						"description": "คืนหนังสือ - เปลี่ยน status เป็น PendingReturn (รอ Admin อนุมัติ)\n\n**Headers:**\n- Authorization: Bearer {user_token}\n\n**Request Body:**\n- user_id: ID ของผู้ใช้ที่ต้องการคืน\n- book_id: ID ของหนังสือที่ต้องการคืน\n\n**Response:**\n- 200 OK: อัปเดต transaction สำเร็จ (status = \"PendingReturn\")\n- 404 Not Found: ไม่พบ transaction ที่กำลังยืมอยู่\n\n**Note:** จำนวนหนังสือ (quantity) จะยังไม่เพิ่มขึ้น จนกว่า Admin จะอนุมัติ"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User History",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/transactions/user/:user_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transactions",
+								"user",
+								":user_id"
+							],
+							"variable": [
+								{
+									"key": "user_id",
+									"value": "USER_ID_HERE",
+									"description": "ID ของผู้ใช้"
+								}
+							]
+						},
+						"description": "ดูประวัติการยืม-คืนของผู้ใช้\n\n**Headers:**\n- Authorization: Bearer {user_token}\n\n**Path Parameters:**\n- user_id: ID ของผู้ใช้\n\n**Response:**\n- 200 OK: รายการ transactions ของผู้ใช้\n- 403 Forbidden: ไม่สามารถดูประวัติของผู้อื่นได้ (ยกเว้น Admin)"
+					},
+					"response": []
+				}
+			],
+			"description": "Transactions Endpoints - จัดการการยืม-คืนหนังสือ"
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							]
+						},
+						"description": "ดึงรายการผู้ใช้ทั้งหมด - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Response:**\n- 200 OK: รายการผู้ใช้ทั้งหมด\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/:user_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								":user_id"
+							],
+							"variable": [
+								{
+									"key": "user_id",
+									"value": "USER_ID_HERE",
+									"description": "ID ของผู้ใช้"
+								}
+							]
+						},
+						"description": "ดึงข้อมูลผู้ใช้ตาม ID - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- user_id: ID ของผู้ใช้\n\n**Response:**\n- 200 OK: ข้อมูลผู้ใช้\n- 404 Not Found: ไม่พบผู้ใช้\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Role",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/:user_id/role?new_role=admin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								":user_id",
+								"role"
+							],
+							"query": [
+								{
+									"key": "new_role",
+									"value": "admin",
+									"description": "บทบาทใหม่: 'user' หรือ 'admin'"
+								}
+							],
+							"variable": [
+								{
+									"key": "user_id",
+									"value": "USER_ID_HERE",
+									"description": "ID ของผู้ใช้"
+								}
+							]
+						},
+						"description": "แก้ไขบทบาทผู้ใช้ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- user_id: ID ของผู้ใช้\n\n**Query Parameters:**\n- new_role: บทบาทใหม่ ('user' หรือ 'admin')\n\n**Response:**\n- 200 OK: แก้ไขสำเร็จ\n- 400 Bad Request: role ไม่ถูกต้อง\n- 404 Not Found: ไม่พบผู้ใช้\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/:user_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								":user_id"
+							],
+							"variable": [
+								{
+									"key": "user_id",
+									"value": "USER_ID_HERE",
+									"description": "ID ของผู้ใช้"
+								}
+							]
+						},
+						"description": "ลบผู้ใช้ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- user_id: ID ของผู้ใช้\n\n**Response:**\n- 200 OK: ลบสำเร็จ\n- 400 Bad Request: ไม่สามารถลบบัญชีตัวเองได้\n- 404 Not Found: ไม่พบผู้ใช้\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"stats"
+							]
+						},
+						"description": "ดึงสถิติระบบ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Response:**\n- 200 OK: สถิติระบบ\n  - total_users: จำนวนผู้ใช้ทั้งหมด\n  - total_admins: จำนวน Admin\n  - total_regular_users: จำนวนผู้ใช้ทั่วไป\n  - total_books: จำนวนหนังสือทั้งหมด\n  - total_transactions: จำนวน transactions ทั้งหมด\n  - active_borrows: จำนวนการยืมที่กำลังยืมอยู่\n  - returned_books: จำนวนการยืมที่คืนแล้ว\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Transactions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"transactions"
+							]
+						},
+						"description": "ดึงรายการ transactions ทั้งหมด - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Response:**\n- 200 OK: รายการ transactions ทั้งหมด\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/transactions/:transaction_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"transactions",
+								":transaction_id"
+							],
+							"variable": [
+								{
+									"key": "transaction_id",
+									"value": "TRANSACTION_ID_HERE",
+									"description": "ID ของ transaction"
+								}
+							]
+						},
+						"description": "ดึงข้อมูล transaction ตาม ID - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- transaction_id: ID ของ transaction\n\n**Response:**\n- 200 OK: ข้อมูล transaction\n- 404 Not Found: ไม่พบ transaction\n- 403 Forbidden: ไม่ใช่ Admin"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Borrow",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/transactions/:transaction_id/approve-borrow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"transactions",
+								":transaction_id",
+								"approve-borrow"
+							],
+							"variable": [
+								{
+									"key": "transaction_id",
+									"value": "TRANSACTION_ID_HERE",
+									"description": "ID ของ transaction"
+								}
+							]
+						},
+						"description": "อนุมัติการยืมหนังสือ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- transaction_id: ID ของ transaction ที่ต้องการอนุมัติ\n\n**Response:**\n- 200 OK: อนุมัติสำเร็จ (status เปลี่ยนเป็น \"Borrowed\", quantity ลดลง 1)\n- 400 Bad Request: transaction ไม่ใช่ Pending หรือหนังสือหมด\n- 404 Not Found: ไม่พบ transaction\n- 403 Forbidden: ไม่ใช่ Admin\n\n**Note:** หลังจากอนุมัติ จำนวนหนังสือ (quantity) จะลดลง 1 เล่ม"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Return",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/transactions/:transaction_id/approve-return",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"transactions",
+								":transaction_id",
+								"approve-return"
+							],
+							"variable": [
+								{
+									"key": "transaction_id",
+									"value": "TRANSACTION_ID_HERE",
+									"description": "ID ของ transaction"
+								}
+							]
+						},
+						"description": "อนุมัติการคืนหนังสือ - Admin only\n\n**Headers:**\n- Authorization: Bearer {admin_token}\n\n**Path Parameters:**\n- transaction_id: ID ของ transaction ที่ต้องการอนุมัติ\n\n**Response:**\n- 200 OK: อนุมัติสำเร็จ (status เปลี่ยนเป็น \"Returned\", return_date ถูกตั้งค่า, quantity เพิ่มขึ้น 1)\n- 400 Bad Request: transaction ไม่ใช่ PendingReturn\n- 404 Not Found: ไม่พบ transaction\n- 403 Forbidden: ไม่ใช่ Admin\n\n**Note:** หลังจากอนุมัติ จำนวนหนังสือ (quantity) จะเพิ่มขึ้น 1 เล่ม"
+					},
+					"response": []
+				}
+			],
+			"description": "Admin Endpoints - จัดการฟีเจอร์สำหรับ Admin เท่านั้น"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "admin_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
